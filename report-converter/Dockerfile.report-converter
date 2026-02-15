@@ -1,0 +1,11 @@
+# Dockerfile for CTRF HTML report conversion
+FROM node:18-slim
+
+# Install ctrf-html-reporter globally
+RUN npm install -g ctrf-html-reporter
+
+# Set workdir
+WORKDIR /converter
+
+# Default command: show help
+CMD ["ctrf-html-reporter", "--help"]
