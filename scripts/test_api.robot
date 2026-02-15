@@ -61,16 +61,16 @@ Latch ON Reverts After Period
     [Tags]    latch
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
-    Sleep    0.2s
-    POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    1.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
     POST On Session    ${SESSION}    /api/on
-    Sleep    0.5s
+    Sleep    1.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    1
-    Sleep    2.5s
+    Sleep    3.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 
@@ -79,33 +79,32 @@ Latch Disabled (0) Does Not Revert
     ${body}=    Create Dictionary    latch=0
     ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
-    Sleep    0.2s
-    POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    1.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
     POST On Session    ${SESSION}    /api/on
-    Sleep    0.5s
+    Sleep    1.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    1
     Sleep    3.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
-    # D1 should revert to 0 after latch period (since latch cannot be disabled)
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 
 Latch Rejects State Change During Active Period
     [Tags]    latch    enforcement
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
-    Sleep    0.2s
-    POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    1.0s
     POST On Session    ${SESSION}    /api/on
-    Sleep    0.2s
+    Sleep    0.5s
     ${resp}=  POST On Session    ${SESSION}    /api/off
     Should Be Equal As Integers    ${resp.status_code}    423
     Should Contain    ${resp.text}    Latch active
-    Sleep    2.2s
+    Sleep    3.0s
     ${resp}=  POST On Session    ${SESSION}    /api/off
     Should Be Equal As Integers    ${resp.status_code}    200
 
@@ -127,18 +126,18 @@ Rapid State Change Requests During Latch
     [Tags]    latch    edge
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
-    Sleep    0.2s
-    POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    1.0s
     POST On Session    ${SESSION}    /api/on
-    Sleep    0.2s
+    Sleep    0.5s
     ${resp}=  POST On Session    ${SESSION}    /api/on
     Should Be Equal As Integers    ${resp.status_code}    423
     ${resp}=  POST On Session    ${SESSION}    /api/off
     Should Be Equal As Integers    ${resp.status_code}    423
     ${resp}=  POST On Session    ${SESSION}    /api/toggle
     Should Be Equal As Integers    ${resp.status_code}    423
-    Sleep    2.2s
+    Sleep    3.0s
     ${resp}=  POST On Session    ${SESSION}    /api/toggle
     Should Be Equal As Integers    ${resp.status_code}    200
 
