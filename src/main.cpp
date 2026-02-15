@@ -209,7 +209,12 @@ static void handleLatch() {
       return;
     }
     int seconds = doc["latch"] | 0;
+    // Clamp to 0 (disable) or [1, 3600]
     if (seconds < 0) seconds = 0;
+    if (seconds > 0) {
+      if (seconds < 1) seconds = 1;
+      if (seconds > 3600) seconds = 3600;
+    }
     latchPeriodMs = seconds * 1000;
     server.send(200, "application/json", String("{\"latch\":") + seconds + "}");
   }
