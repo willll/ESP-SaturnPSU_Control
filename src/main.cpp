@@ -376,12 +376,23 @@ void setup() {
  */
 void loop() {
   server.handleClient();
-  // Latch timer logic
+  // Improved latch timer logic: always clear latch and revert D1 immediately after expiry
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry && lastLatchedState != -1) {
     digitalWrite(kD1Pin, lastLatchedState);
     latchTimerExpiry = 0;
     lastLatchedState = -1;
+    // Extra: ensure D1 is available for state change immediately
+    delay(10); // Small delay to ensure hardware state update
   }
+
+  // Helper: forcibly clear latch for test setup (optional, not exposed by default)
+  // Uncomment below to expose /api/reset endpoint for tests
+  // server.on("/api/reset", HTTP_POST, []() {
+  //   latchTimerExpiry = 0;
+  //   lastLatchedState = -1;
+  //   digitalWrite(kD1Pin, LOW);
+  //   server.send(200, "application/json", "{\"reset\":true}");
+  // });
   if (Serial.available() > 0) {
     int c = Serial.read();
     if (c == 'm' || c == 'M' || c == '?') {
