@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y wget gnupg unzip curl xvfb libxi6 libgconf-2-4 libnss3 libxss1 libappindicator3-1 fonts-liberation libatk-bridge2.0-0 libgtk-3-0 && \
+    apt-get install -y wget gnupg unzip curl xvfb libxi6 libnss3 libxss1 libappindicator3-1 fonts-liberation libatk-bridge2.0-0 libgtk-3-0 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome
@@ -19,8 +19,13 @@ RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1) &
     unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
     rm /tmp/chromedriver.zip
 
+
 # Install Robot Framework and libraries
 RUN pip install --no-cache-dir robotframework robotframework-requests robotframework-seleniumlibrary robotframework-ctrf
+
+# Install Node.js and ctrf-html-reporter
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+RUN npm install -g ctrf-html-reporter
 
 # Set workdir
 WORKDIR /tests
