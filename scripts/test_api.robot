@@ -45,6 +45,47 @@ Menu Endpoint Returns Status
     ${resp}=  GET On Session    ${SESSION}    /menu
     Should Contain    ${resp.text}    ESP8266 Status
 
+
+Latch ON Reverts After Period
+    [Tags]    latch
+    # Set latch period to 2 seconds
+    ${body}=    Create Dictionary    latch=2
+    POST On Session    ${SESSION}    /api/latch    json=${body}
+    Sleep    0.2s
+    # Set D1 OFF to start
+    POST On Session    ${SESSION}    /api/off
+    Sleep    0.5s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    0
+    # Toggle ON and verify auto-revert
+    POST On Session    ${SESSION}    /api/on
+    Sleep    0.5s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    1
+    Sleep    2.5s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    0
+
+Latch Disabled (0) Does Not Revert
+    [Tags]    latch
+    # Set latch period to 0 (disable)
+    ${body}=    Create Dictionary    latch=0
+    POST On Session    ${SESSION}    /api/latch    json=${body}
+    Sleep    0.2s
+    # Set D1 OFF to start
+    POST On Session    ${SESSION}    /api/off
+    Sleep    0.5s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    0
+    # Toggle ON and verify no auto-revert
+    POST On Session    ${SESSION}    /api/on
+    Sleep    0.5s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    1
+    Sleep    3.0s
+    ${resp}=  GET On Session    ${SESSION}    /api/status
+    Should Be Equal As Integers    ${resp.json()['d1']}    1
+
 *** Keywords ***
 Setup Suite
     Log    Starting ESP8266 D1 Control API tests
