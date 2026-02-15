@@ -1,5 +1,3 @@
-
-
 /**
  * @file main.cpp
  * @brief ESP8266 D1 Control Firmware
@@ -254,7 +252,15 @@ static void startLatchTimer(int revertState) {
  * @brief Handle /api/on: set D1 HIGH, start latch timer
  * @endpoint /api/on (POST)
  */
+static bool isLatchActive() {
+  return latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
+}
+
 static void handleOn() {
+  if (isLatchActive()) {
+    server.send(423, "application/json", "{\"error\":\"Latch active\"}");
+    return;
+  }
   digitalWrite(kD1Pin, HIGH);
   startLatchTimer(LOW);
   sendJsonStatus();
@@ -266,6 +272,10 @@ static void handleOn() {
  * @endpoint /api/off (POST)
  */
 static void handleOff() {
+  if (isLatchActive()) {
+    server.send(423, "application/json", "{\"error\":\"Latch active\"}");
+    return;
+  }
   digitalWrite(kD1Pin, LOW);
   startLatchTimer(HIGH);
   sendJsonStatus();
@@ -277,6 +287,10 @@ static void handleOff() {
  * @endpoint /api/toggle (POST)
  */
 static void handleToggle() {
+  if (isLatchActive()) {
+    server.send(423, "application/json", "{\"error\":\"Latch active\"}");
+    return;
+  }
   int newState = !digitalRead(kD1Pin);
   digitalWrite(kD1Pin, newState);
   startLatchTimer(newState ? LOW : HIGH);
