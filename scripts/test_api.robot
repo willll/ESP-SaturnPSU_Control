@@ -77,7 +77,8 @@ Latch ON Reverts After Period
 Latch Disabled (0) Does Not Revert
     [Tags]    latch
     ${body}=    Create Dictionary    latch=0
-    POST On Session    ${SESSION}    /api/latch    json=${body}
+    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    Should Be True    ${resp.json()['latch']} >= 1
     Sleep    0.2s
     POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
@@ -89,7 +90,8 @@ Latch Disabled (0) Does Not Revert
     Should Be Equal As Integers    ${resp.json()['d1']}    1
     Sleep    3.0s
     ${resp}=  GET On Session    ${SESSION}    /api/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    1
+    # D1 should revert to 0 after latch period (since latch cannot be disabled)
+    Should Be Equal As Integers    ${resp.json()['d1']}    0
 
 Latch Rejects State Change During Active Period
     [Tags]    latch    enforcement

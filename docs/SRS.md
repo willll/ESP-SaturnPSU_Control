@@ -1,3 +1,6 @@
+## Latch Functionality Requirement
+
+- The latch period cannot be disabled. The minimum allowed value for the latch is 1 second. Any attempt to set the latch to 0 or a negative value must result in the latch being set to 1 second.
 # Software Requirements Specification (SRS)
 
 ## Project: ESP-SaturnPSU_Control
