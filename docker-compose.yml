@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium-chrome
+    ports:
+      - "4444:4444"
+    shm_size: 2g
+
+  tests:
+    build: .
+    container_name: esp-saturnpsu-test
+    environment:
+      - DEVICE_IP=192.168.1.107  # Set your device IP here
+      - SELENIUM_REMOTE_URL=http://selenium:4444/wd/hub
+    depends_on:
+      - selenium
+    volumes:
+      - ./scripts:/tests/scripts
+      - ./scripts/test_api.robot:/tests/test_api.robot
+      - ./scripts/test_ui.robot:/tests/test_ui.robot
+    working_dir: /tests
