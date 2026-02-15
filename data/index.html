@@ -137,33 +137,28 @@ function setState(state) {
 }
 
 function refresh() {
-  debug('GET /api/status ...');
   fetch('/api/status')
     .then(r => {
       if (!r.ok) {
-        r.text().then(text => {
-          debug('API error: ' + r.status + ' ' + text);
-          alert('API error: ' + r.status + '\n' + text);
-        });
+        r.text(); // error ignored
         return Promise.reject('API error');
       }
-      debug('GET /api/status success');
       return r.json();
     })
     .then(updateStatus)
-    .catch(e => debug('Error: ' + e));
+    .catch(e => {});
 }
 
 function updateStatus(data) {
   document.getElementById('status').textContent =
-    'D1: ' + (data.d1 === '1' ? 'ON' : 'OFF') +
+    'D1: ' + (data.d1 == 1 ? 'ON' : 'OFF') +
     ' | Latch: ' + data.latch + 's';
   document.getElementById('latchSeconds').value = data.latch;
 
   // Set ON/OFF button colors according to D1 status
   const btnOn = document.getElementById('btnOn');
   const btnOff = document.getElementById('btnOff');
-  if (data.d1 === '1') {
+  if (data.d1 == 1) {
     btnOn.classList.add('green');
     btnOn.classList.remove('red');
     btnOff.classList.add('red');
