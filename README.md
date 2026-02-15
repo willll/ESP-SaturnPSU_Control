@@ -179,6 +179,34 @@ Example response from /api/status:
 {"d1":1}
 ```
 
+
+## Automated Testing
+
+This project includes automated test suites for the REST API and device behavior:
+
+- **Robot Framework API tests** (recommended, runs in Docker):
+	- Location: `scripts/test_api.robot`
+	- Run with Docker:
+		```bash
+		docker build -t esp8266-robot-tests .
+		docker run --rm -e DEVICE_IP=192.168.1.107 esp8266-robot-tests
+		```
+		(Replace the IP as needed.)
+	- See `scripts/robot_test_README.md` for details.
+
+- **Python API test script** (optional):
+	- Location: `scripts/test_api.py`
+	- Run with:
+		```bash
+		python3 scripts/test_api.py 192.168.1.107
+		```
+
+Test results are shown in the terminal. The Robot Framework suite covers all REST API endpoints and basic device logic.
+
+## Test Campaign
+
+See `docs/test-campaign.md` for a full manual and automated test checklist covering firmware, API, web UI, deployment, and documentation.
+
 ## Notes
 - D1 corresponds to GPIO5.
 - The control output is active HIGH by default.
