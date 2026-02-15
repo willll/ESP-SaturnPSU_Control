@@ -38,6 +38,20 @@ GitHub Link In Footer
     [Tags]    footer
     Element Attribute Value Should Be    xpath=//footer//a    href    https://github.com/willll/ESP-SaturnPSU_Control
 
+Polls Status Every 2 Seconds
+    [Tags]    polling    ui
+    # Set D1 state to 1 (ON)
+    Set D1 State    1
+    Reload Page
+    Sleep    2.5s
+    # Change D1 state to 0 (OFF) via API
+    Set D1 State    0
+    # Wait for polling interval
+    Sleep    2.5s
+    # Verify UI reflects new D1 state
+    Element Attribute Value Should Be    id=btnOn    class    btn-on red
+    Element Attribute Value Should Be    id=btnOff   class    btn-off green
+
 *** Keywords ***
 Open Browser To D1 UI
     Open Browser    ${URL}    Chrome
