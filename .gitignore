@@ -1,0 +1,8 @@
+.pio/
+.pioenvs/
+.venv/
+.vscode
+.piolibdeps/
+.vscode/
+*.log
+data/wifi.json

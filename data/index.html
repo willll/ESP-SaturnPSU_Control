@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D1 Control</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>ESP8266 D1 Control</h1>
+    <div class="status" id="status">Loading...</div>
+    <div class="row">
+      <button class="btn-on" id="btnOn" onclick="setState('on')">On</button>
+      <button class="btn-off secondary" id="btnOff" onclick="setState('off')">Off</button>
+      <button onclick="setState('toggle')">Toggle</button>
+      <button class="secondary" onclick="refresh()">Refresh</button>
+    </div>
+    <div class="field">
+      <label for="latchSeconds">Latch period (seconds)</label>
+      <input id="latchSeconds" type="number" min="0" step="1" value="5" />
+    </div>
+    <div class="debug" id="debug">Debug log...</div>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>

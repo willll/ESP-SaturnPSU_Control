@@ -1,0 +1,10 @@
+{
+  "ssid": "your-ssid",
+  "password": "your-password",
+  "hostname": "esp8266-d1",
+  "connect_timeout_ms": 20000,
+  "notes": [
+    "Rename this file to wifi.json after editing",
+    "Extra fields are ignored by the firmware"
+  ]
+}

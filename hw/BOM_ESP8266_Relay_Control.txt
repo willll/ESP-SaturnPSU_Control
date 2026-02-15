@@ -1,0 +1,329 @@
+===================================================================================
+                    BILL OF MATERIALS (BOM)
+        ESP8266 NodeMCU to Omron G6B-1114P-US Relay Control Circuit
+===================================================================================
+
+Project: ESP8266 12VDC Relay Control
+Date: February 15, 2024
+Revision: 1.0
+
+===================================================================================
+COMPONENT LIST
+===================================================================================
+
+Item | Qty | Reference | Value/Part Number      | Description                        | Footprint/Package | Notes
+-----|-----|-----------|------------------------|------------------------------------|--------------------|------------------------
+  1  |  1  | U1        | ESP8266 NodeMCU        | ESP8266 ESP-12E Development Board  | NodeMCU Board      | CP2102 USB-UART
+  2  |  1  | Q1        | 2N2222                 | NPN Transistor 600mA 40V           | TO-92              | Alt: BC547, 2N3904
+  3  |  1  | R1        | 1kΩ                    | Resistor 1/4W 5%                   | Axial              | Carbon Film
+  4  |  1  | D1        | 1N4007                 | Rectifier Diode 1A 1000V           | DO-41              | Alt: 1N4001-1N4007
+  5  |  1  | K1        | G6B-1114P-US           | Relay SPST-NO 12VDC 5A             | PCB Mount 4-pin    | Omron
+  6  |  1  | PS1       | 12V DC Supply          | 12V DC Power Supply 500mA min      | Barrel Jack/Term   | Wall Adapter
+  7  |  1  | USB1      | USB Cable              | USB Micro-B Cable                  | Cable              | For ESP8266 power
+  8  | AR  | WIRE      | 22 AWG Wire            | Stranded hookup wire               | Various colors     | Red, Black, Orange
+
+===================================================================================
+DETAILED SPECIFICATIONS
+===================================================================================
+
+U1 - ESP8266 NodeMCU ESP-12E CP2102
+------------------------------------
+Manufacturer: Espressif Systems
+Microcontroller: ESP8266 ESP-12E
+USB-UART Bridge: CP2102
+Operating Voltage: 3.3V (5V via USB)
+GPIO Pins: 11 usable
+Flash Memory: 4MB
+Wi-Fi: 802.11 b/g/n
+Current Draw: ~80mA (typical), 170mA (peak)
+Dimensions: 58mm x 31mm x 13mm
+
+Pinout Used:
+  - D1 (GPIO5): Relay control signal output
+  - GND: Ground reference
+  - VIN/USB: 5V power input
+
+Power Requirements: 5V 500mA via USB Micro-B
+
+
+Q1 - 2N2222 NPN Transistor
+---------------------------
+Type: NPN Bipolar Junction Transistor
+Package: TO-92
+Collector Current (IC max): 600mA (800mA peak)
+Collector-Emitter Voltage (VCEO): 40V
+Power Dissipation: 500mW
+DC Current Gain (hFE): 100-300 typical
+Transition Frequency: 250 MHz
+
+Pin Configuration (TO-92):
+  Pin 1: Emitter (E)
+  Pin 2: Base (B)
+  Pin 3: Collector (C)
+
+NOTE: Pin order may vary by manufacturer. Verify with datasheet!
+
+Alternative Parts:
+  - BC547 (100mA, more common in EU)
+  - 2N3904 (200mA, common in US)
+  - PN2222 (600mA, plastic package)
+  - BC337 (800mA, higher current)
+
+
+R1 - 1kΩ Resistor
+------------------
+Resistance: 1000Ω (1kΩ)
+Power Rating: 1/4W (0.25W)
+Tolerance: ±5% (or better)
+Type: Carbon Film or Metal Film
+Package: Axial Lead
+Color Code: Brown-Black-Red-Gold
+
+Purpose: Base current limiting resistor
+Calculated Base Current: (3.3V - 0.7V) / 1000Ω ≈ 2.6mA
+Actual Power: ~6.8mW (well within rating)
+
+
+D1 - 1N4007 Rectifier Diode
+----------------------------
+Type: Rectifier Diode
+Forward Current: 1A continuous
+Reverse Voltage: 1000V
+Forward Voltage Drop: 0.7V @ 1A
+Package: DO-41 (Axial)
+Recovery Time: 30µs
+
+Polarity Marking: Cathode marked with stripe/band
+
+Purpose: Flyback/Freewheeling diode
+Function: Protects transistor from inductive kickback when relay de-energizes
+Connection: Cathode to +12V (relay coil +), Anode to collector
+
+Alternative Parts (in order of preference):
+  - 1N4007 (1000V) - Recommended
+  - 1N4004 (400V) - Adequate
+  - 1N4001 (50V) - Minimum acceptable
+  - UF4007 (1000V, fast recovery) - Best choice
+
+
+K1 - Omron G6B-1114P-US Relay
+-------------------------------
+Manufacturer: Omron Electronics
+Part Number: G6B-1114P-US
+Type: Single Pole Single Throw - Normally Open (SPST-NO)
+Package: PCB Mount, 4-pin through-hole
+Mounting: Straight pins, 5mm pitch
+
+Coil Specifications:
+  - Nominal Voltage: 12VDC
+  - Coil Resistance: 400Ω (typical)
+  - Coil Current: 30mA (nominal)
+  - Pick-up Voltage: 75% of nominal (9V)
+  - Drop-out Voltage: 10% of nominal (1.2V)
+  - Operate Time: 10ms max
+  - Release Time: 5ms max
+
+Contact Specifications:
+  - Configuration: SPST-NO (Form A)
+  - Contact Rating: 5A @ 250VAC, 5A @ 30VDC
+  - Max Switching Voltage: 250VAC / 110VDC
+  - Max Switching Current: 5A
+  - Max Switching Power: 1250VA / 150W
+  - Contact Resistance: 100mΩ max
+  - Mechanical Life: 10,000,000 operations
+  - Electrical Life: 100,000 operations (resistive load)
+
+Pin Configuration (4-pin):
+  Pin 1: Coil (+) - Connect to +12V
+  Pin 2: Coil (-) - Connect to transistor collector
+  Pin 3: COM (Common) - Load common terminal
+  Pin 4: NO (Normally Open) - Load switched terminal
+
+Dimensions: 29mm x 12.7mm x 15.5mm
+Weight: Approximately 5g
+
+Safety: UL, CSA, TÜV approved
+Operating Temperature: -40°C to +85°C
+
+
+PS1 - 12V DC Power Supply
+--------------------------
+Output Voltage: 12VDC ±5%
+Output Current: 500mA minimum (1A recommended)
+Input Voltage: 100-240VAC 50/60Hz (universal input)
+Connector: 2.1mm or 2.5mm barrel jack, or terminal block
+Regulation: <5% typical
+Ripple: <100mV p-p typical
+Protection: Overcurrent, overvoltage, short-circuit
+
+Power Calculation:
+  Relay Coil: 12V × 30mA = 360mW
+  Safety Factor: 2x
+  Recommended: 12V @ 500mA (6W) minimum
+
+Note: This supply is ONLY for the relay circuit.
+ESP8266 is powered separately via USB (5V).
+
+
+USB1 - USB Cable for ESP8266
+-----------------------------
+Type: USB Type-A to Micro-B
+Length: 1m typical (adjust as needed)
+Purpose: Power and programming for ESP8266
+Current Rating: 500mA minimum (1A recommended)
+
+
+WIRE - Hookup Wire
+------------------
+Type: Stranded copper hookup wire
+Gauge: 22 AWG (0.33 mm²)
+Insulation: PVC
+Voltage Rating: 300V minimum
+Temperature Rating: 80°C minimum
+
+Wire Lengths (approximate):
+  - Red (+12V): 30cm
+  - Black (GND): 50cm
+  - Orange (Signal): 20cm
+
+Color Coding:
+  - Red: +12V power
+  - Black: Ground (GND)
+  - Orange/Yellow: Signal (GPIO)
+
+===================================================================================
+TOOLS REQUIRED
+===================================================================================
+
+- Soldering iron (25-40W)
+- Solder (60/40 or lead-free)
+- Wire strippers
+- Needle-nose pliers
+- Multimeter (for testing)
+- Breadboard (optional, for prototyping)
+- Jumper wires (optional)
+- Helping hands or PCB holder
+
+===================================================================================
+ASSEMBLY NOTES
+===================================================================================
+
+1. VERIFY TRANSISTOR PINOUT
+   - TO-92 pinout varies by manufacturer
+   - Confirm with datasheet before soldering
+   - Flat side typically indicates orientation
+
+2. DIODE POLARITY
+   - Cathode (stripe) MUST connect to +12V side
+   - Incorrect orientation will damage transistor
+
+3. COMMON GROUND
+   - ESP8266 GND and 12V supply GND MUST be connected
+   - This is critical for proper operation
+
+4. POWER ISOLATION
+   - ESP8266 powered via USB (5V)
+   - 12V supply only for relay circuit
+   - DO NOT connect 12V to ESP8266 VIN
+
+5. RELAY CONTACT WIRING
+   - Pin 3 (COM) and Pin 4 (NO) switch your load
+   - Observe load voltage/current ratings
+   - Use appropriate wire gauge for load current
+
+===================================================================================
+TESTING PROCEDURE
+===================================================================================
+
+1. Before applying power:
+   - Verify all connections with multimeter
+   - Check for shorts between power and ground
+   - Verify transistor pinout
+   - Confirm diode polarity
+
+2. Initial power-up:
+   - Connect ESP8266 USB only (no 12V yet)
+   - Upload test sketch
+   - Verify GPIO output with multimeter
+
+3. Full circuit test:
+   - Connect 12V supply
+   - Run test program
+   - Listen for relay click
+   - Measure relay coil voltage
+   - Test contact switching with multimeter
+
+4. Load testing:
+   - Start with low-current resistive load
+   - Gradually increase to rated current
+   - Monitor for overheating
+   - Verify switching reliability
+
+===================================================================================
+ESTIMATED COSTS (USD, 2024)
+===================================================================================
+
+ESP8266 NodeMCU:          $4.00 - $8.00
+2N2222 Transistor:        $0.10 - $0.30
+1kΩ Resistor:            $0.05 - $0.10
+1N4007 Diode:            $0.05 - $0.15
+Omron G6B-1114P-US:       $3.00 - $6.00
+12V Power Supply:         $5.00 - $10.00
+USB Cable:                $2.00 - $5.00
+Miscellaneous Wire:       $2.00 - $5.00
+
+TOTAL ESTIMATED COST:     $16.20 - $34.55
+
+Note: Prices vary by supplier and quantity
+Bulk purchases significantly reduce per-unit cost
+
+===================================================================================
+SUPPLIERS
+===================================================================================
+
+General Electronics:
+  - Digi-Key (www.digikey.com)
+  - Mouser (www.mouser.com)
+  - Newark/Element14 (www.newark.com)
+  - Arrow Electronics (www.arrow.com)
+
+Cost-Effective Options:
+  - AliExpress (www.aliexpress.com) - Longer shipping
+  - Amazon - Fast shipping, higher prices
+  - eBay - Various sellers
+
+Local:
+  - Electronics specialty stores
+  - Maker spaces
+  - University surplus stores
+
+===================================================================================
+SAFETY WARNINGS
+===================================================================================
+
+⚠️ ELECTRICAL SAFETY
+  - Disconnect all power before handling circuit
+  - Use proper insulation on exposed connections
+  - Observe relay contact voltage/current ratings
+  - Do not exceed component specifications
+
+⚠️ RELAY CONTACTS
+  - Relay contacts are NOT isolated from coil
+  - Switching AC mains requires proper safety measures
+  - Use appropriate enclosure for high-voltage loads
+  - Follow local electrical codes
+
+⚠️ HEAT MANAGEMENT
+  - Transistor may heat up under continuous operation
+  - Ensure adequate ventilation
+  - Consider heatsink if necessary
+
+===================================================================================
+REVISION HISTORY
+===================================================================================
+
+Rev 1.0 - 2024-02-15 - Initial release
+
+===================================================================================
+END OF BILL OF MATERIALS
+===================================================================================

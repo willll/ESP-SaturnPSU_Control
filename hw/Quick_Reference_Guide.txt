@@ -1,0 +1,308 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           QUICK REFERENCE GUIDE                              ║
+║          ESP8266 NodeMCU to Omron G6B-1114P-US Relay Control Circuit         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ COMPONENT PINOUT QUICK REFERENCE                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────┐
+│  2N2222 NPN TRANSISTOR (TO-92)  │
+│                                 │
+│    Flat Side                    │
+│   ┌─────────┐                   │
+│   │  E B C  │  (Looking at face)│
+│   │  │ │ │  │                   │
+│   └──┼─┼─┼──┘                   │
+│      │ │ │                      │
+│      1 2 3                      │
+│                                 │
+│  Pin 1: Emitter (E) → GND       │
+│  Pin 2: Base (B) → R1           │
+│  Pin 3: Collector (C) → Relay   │
+│                                 │
+│  ⚠️  VERIFY WITH YOUR DATASHEET │
+│      Pin order varies!          │
+└─────────────────────────────────┘
+
+┌─────────────────────────────────┐
+│  1N4007 DIODE                   │
+│                                 │
+│   ┌────────────┐                │
+│───┤            ├───             │
+│   └────────────┘                │
+│        ▲                        │
+│        │                        │
+│     Cathode                     │
+│     (Stripe)                    │
+│                                 │
+│  Cathode (−) → +12V             │
+│  Anode (+)   → Collector        │
+└─────────────────────────────────┘
+
+┌─────────────────────────────────┐
+│  OMRON G6B-1114P-US RELAY       │
+│  (4-Pin Configuration)          │
+│                                 │
+│    Physical Pins (Bottom View)  │
+│     ┌───────────────┐           │
+│     │               │           │
+│     │  ┌─────────┐  │           │
+│     │  │ RELAY   │  │           │
+│     │  └─────────┘  │           │
+│     │               │           │
+│     └───┬─┬───┬─┬───┘           │
+│         │ │   │ │               │
+│         1 2   3 4               │
+│                                 │
+│  Pin 1: Coil (+)  → +12V        │
+│  Pin 2: Coil (−)  → Collector   │
+│  Pin 3: COM       → Load common │
+│  Pin 4: NO        → Load switch │
+└─────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ WIRING COLOR CODE                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+🔴 RED    = +12V Power (to Relay Pin 1 and Diode Cathode)
+⚫ BLACK  = Ground (Common GND - MUST connect ESP8266 and 12V supply)
+🟠 ORANGE = Signal/Control (ESP8266 D1 → R1 → Transistor Base)
+🟡 YELLOW = Collector path (Relay Pin 2 ← Transistor Collector)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CONNECTION CHECKLIST                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Before Powering Up:
+
+☐ 1. ESP8266 D1 (GPIO5) → 1kΩ Resistor → Transistor BASE
+☐ 2. ESP8266 GND → Common Ground Point
+☐ 3. Transistor EMITTER → Common Ground Point
+☐ 4. Transistor COLLECTOR → Relay Pin 2 (Coil −)
+☐ 5. +12V Supply → Relay Pin 1 (Coil +)
+☐ 6. +12V Supply → Diode CATHODE (stripe end)
+☐ 7. Diode ANODE → Relay Pin 2 / Collector junction
+☐ 8. 12V Supply GND → Common Ground Point
+☐ 9. Verify transistor pinout with multimeter
+☐ 10. Double-check diode polarity (stripe to +12V)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ TESTING PROCEDURE                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Step 1: Visual Inspection
+  ☐ All connections secure
+  ☐ No shorts between power and ground
+  ☐ Diode stripe pointing to +12V
+  ☐ Transistor correctly oriented
+
+Step 2: Resistance Check (Power OFF)
+  ☐ Measure relay coil: Should read ~400Ω between pins 1 & 2
+  ☐ Check for shorts: +12V to GND should be >10kΩ
+  ☐ Verify ground continuity: ESP GND to 12V GND = 0Ω
+
+Step 3: Power ESP8266 Only (No 12V yet)
+  ☐ Connect USB to ESP8266
+  ☐ Upload test code
+  ☐ Measure GPIO5: Should toggle between 0V and 3.3V
+  ☐ Measure at transistor base: Should see ~0.6-0.7V when GPIO HIGH
+
+Step 4: Full Circuit Test
+  ☐ Connect 12V supply
+  ☐ Run test program
+  ☐ Listen for relay "click"
+  ☐ Measure relay coil voltage: Should be ~12V when activated
+  ☐ Measure collector voltage: Should be near 0V when ON, 12V when OFF
+
+Step 5: Load Test
+  ☐ Connect low-current LED + resistor to relay contacts (test load)
+  ☐ Verify switching action
+  ☐ Test with actual load (within relay ratings)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SAMPLE ARDUINO CODE                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+// ESP8266 Relay Control - Basic Example
+const int RELAY_PIN = D1;  // GPIO5
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);  // Relay OFF
+  Serial.begin(115200);
+  Serial.println("ESP8266 Relay Control Ready");
+}
+
+void loop() {
+  // Turn relay ON
+  digitalWrite(RELAY_PIN, HIGH);
+  Serial.println("Relay ON");
+  delay(2000);
+  
+  // Turn relay OFF
+  digitalWrite(RELAY_PIN, LOW);
+  Serial.println("Relay OFF");
+  delay(2000);
+}
+
+// Advanced: Control via WiFi
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+ESP8266WebServer server(80);
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+  
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  
+  server.on("/on", []() {
+    digitalWrite(RELAY_PIN, HIGH);
+    server.send(200, "text/plain", "Relay ON");
+  });
+  
+  server.on("/off", []() {
+    digitalWrite(RELAY_PIN, LOW);
+    server.send(200, "text/plain", "Relay OFF");
+  });
+  
+  server.begin();
+  Serial.println("Server started at: " + WiFi.localIP().toString());
+}
+
+void loop() {
+  server.handleClient();
+}
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING QUICK FIXES                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Problem: Relay doesn't click
+├─ Check: Is 12V supply connected and powered?
+├─ Check: Is common ground connected? (MOST COMMON ISSUE)
+├─ Measure: Voltage at transistor base when GPIO HIGH (should be ~0.7V)
+└─ Measure: Voltage at relay coil Pin 1 (should be 12V)
+
+Problem: Relay clicks but load doesn't switch
+├─ Verify: Load connected to Pins 3 (COM) and 4 (NO)?
+├─ Check: Load current within 5A rating?
+└─ Test: Measure continuity between Pin 3 and 4 when relay activated
+
+Problem: ESP8266 resets when relay switches
+├─ Add: 100µF capacitor across 12V supply (near relay)
+├─ Check: USB power supply adequate? (Use 1A minimum)
+└─ Verify: Ground connections solid and short
+
+Problem: Transistor gets hot
+├─ Check: Base resistor is 1kΩ (not higher value)
+├─ Measure: Collector current (should be ~30mA)
+└─ Verify: Correct transistor (2N2222 or equivalent)
+
+Problem: Diode gets hot
+├─ CRITICAL: Check diode polarity immediately!
+├─ Stripe (cathode) MUST be at +12V side
+└─ If reversed, replace diode before continuing
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SAFETY REMINDERS                                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+⚠️  NEVER connect 12V to ESP8266 VIN or any GPIO pin
+⚠️  ALWAYS connect common ground between ESP8266 and 12V supply
+⚠️  VERIFY transistor pinout before soldering (varies by manufacturer)
+⚠️  CHECK diode polarity (stripe to +12V)
+⚠️  OBSERVE relay contact ratings (5A max)
+⚠️  USE proper enclosure for AC mains loads
+⚠️  DISCONNECT power before handling circuit
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ MEASUREMENT REFERENCE VALUES                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Location                Expected Voltage    Expected Current    Notes
+─────────────────────────────────────────────────────────────────────────────
+ESP8266 GPIO5 (HIGH)    3.3V               2-3mA output        Control signal
+Transistor Base         0.6-0.7V           2.6mA               When ON
+Transistor Collector    0.2-0.5V (ON)      30mA                When saturated
+                        12V (OFF)          0mA                 When cutoff
+Relay Coil Pin 1        12V                30mA                When activated
+Relay Coil Pin 2        0.2-0.5V           30mA                When activated
+Common Ground           0V (reference)     30-35mA total       When ON
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ORDERING INFORMATION                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Component              Part Number           Quantity    Est. Cost
+─────────────────────────────────────────────────────────────────────────────
+ESP8266 Board          NodeMCU ESP-12E       1          $4-8
+Transistor            2N2222 (TO-92)         1          $0.10-0.30
+Resistor              1kΩ 1/4W               1          $0.05-0.10
+Diode                 1N4007                 1          $0.05-0.15
+Relay                 G6B-1114P-US           1          $3-6
+Power Supply          12V 500mA              1          $5-10
+USB Cable             Micro-B                1          $2-5
+Wire                  22 AWG Stranded        As needed  $2-5
+──────────────────────────────────────────────────────────────────────────────
+                                        TOTAL: $16-35 USD
+
+Search Terms for Suppliers:
+• Digi-Key: "G6B-1114P-US DC12"
+• Mouser: "653-G6B-1114P-US"
+• AliExpress: "ESP8266 NodeMCU" + "Omron relay 12V" + "2N2222"
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION FILES INCLUDED                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+1. BOM_ESP8266_Relay_Control.txt
+   → Complete Bill of Materials with specifications
+
+2. Circuit_Schematic_ASCII.txt
+   → Detailed ASCII schematic with calculations
+
+3. ESP8266_Relay_Circuit.net
+   → KiCAD-style netlist
+
+4. ESP8266_Relay_Circuit.cir
+   → SPICE simulation netlist
+
+5. Quick_Reference_Guide.txt (this file)
+   → Fast reference for building and testing
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SUPPORT & RESOURCES                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+ESP8266 Documentation:
+• https://arduino-esp8266.readthedocs.io/
+
+Omron Relay Datasheet:
+• Search: "Omron G6B-1114P-US datasheet PDF"
+
+Component Datasheets:
+• 2N2222: Search "2N2222 datasheet" for your specific package
+• 1N4007: Standard rectifier diode specifications
+
+Forums & Communities:
+• ESP8266 Community Forum
+• Arduino Forum
+• Reddit: r/esp8266
+• Stack Exchange: Electrical Engineering
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        END OF QUICK REFERENCE GUIDE                          ║
+║                                                                              ║
+║  For detailed information, refer to the complete documentation files         ║
+║  Always double-check connections before applying power!                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝

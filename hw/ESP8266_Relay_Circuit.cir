@@ -1,0 +1,242 @@
+* ESP8266 NodeMCU to Omron G6B-1114P-US Relay Control Circuit
+* SPICE Netlist for Circuit Simulation
+* Date: 2024-02-15
+* Description: 12VDC Relay control from ESP8266 GPIO via NPN transistor
+
+.TITLE ESP8266 Relay Control Circuit
+
+* ============================================================================
+* CIRCUIT DESCRIPTION
+* ============================================================================
+* ESP8266 GPIO5 controls relay through 2N2222 NPN transistor
+* Flyback diode protects transistor from inductive kickback
+* Common ground between ESP8266 and 12V supply required
+
+* ============================================================================
+* POWER SUPPLIES
+* ============================================================================
+* ESP8266 powered separately via USB (not modeled here)
+* 12V supply for relay coil
+V12V    VCC     0       DC 12V      ; 12V power supply
+VESP    GPIO5   0       PULSE(0 3.3 1m 1u 1u 100m 250m) ; GPIO5 signal
+
+* ============================================================================
+* COMPONENTS
+* ============================================================================
+
+* Base resistor (R1)
+R1      GPIO5   BASE    1k
+
+* NPN Transistor Q1 (2N2222)
+* Model: Generic NPN, Beta=100, Vbe=0.7V
+Q1      COLLECTOR BASE 0    Q2N2222
+
+* Relay Coil (K1) - Modeled as RL circuit
+* Coil resistance: 400 ohms, Inductance: ~100mH (typical)
+RCOIL   VCC     NODE1   400
+LCOIL   NODE1   COLLECTOR  100m
+
+* Flyback Diode (D1) - 1N4007
+* Cathode to VCC, Anode to COLLECTOR
+D1      COLLECTOR VCC   D1N4007
+
+* ============================================================================
+* RELAY CONTACTS (Not modeled - mechanical switching)
+* ============================================================================
+* Pin 3 (COM) and Pin 4 (NO) would connect load
+* Contact closure modeled by voltage-controlled switch (optional)
+
+* ============================================================================
+* COMPONENT MODELS
+* ============================================================================
+
+* 2N2222 NPN Transistor Model (Generic)
+.MODEL Q2N2222 NPN(
++   IS=14.34E-15
++   BF=255.9
++   NF=1.307
++   VAF=74.03
++   IKF=0.2847
++   ISE=14.34E-15
++   NE=1.307
++   BR=6.092
++   NR=1
++   VAR=24
++   IKR=0
++   ISC=0
++   NC=2
++   RB=1
++   IRB=0.1
++   RBM=0.1
++   RE=0.1
++   RC=1
++   CJE=25.84E-12
++   VJE=0.75
++   MJE=0.33
++   TF=411.1E-12
++   XTF=3
++   VTF=1.7
++   ITF=0.6
++   PTF=0
++   CJC=7.306E-12
++   VJC=0.75
++   MJC=0.34
++   XCJC=1
++   TR=46.91E-9
++   XTB=1.5
++   EG=1.11
++   XTI=3
++   FC=0.5)
+
+* 1N4007 Diode Model
+.MODEL D1N4007 D(
++   IS=76.9n
++   RS=42.0m
++   N=1.45
++   BV=1000
++   IBV=5.00u
++   CJO=26.5p
++   VJ=0.750
++   M=0.333
++   TT=4.32u)
+
+* ============================================================================
+* ANALYSIS COMMANDS
+* ============================================================================
+
+* Transient Analysis - Observe relay switching
+.TRAN 1u 500m 0 1u
+
+* DC Operating Point
+.OP
+
+* ============================================================================
+* MEASUREMENT COMMANDS
+* ============================================================================
+
+* Measure base current
+.MEASURE TRAN IB_AVG AVG I(R1) FROM=100m TO=200m
+.MEASURE TRAN IB_PEAK MAX I(R1)
+
+* Measure collector current (relay coil current)
+.MEASURE TRAN IC_AVG AVG I(LCOIL) FROM=100m TO=200m
+.MEASURE TRAN IC_PEAK MAX I(LCOIL)
+
+* Measure collector-emitter voltage
+.MEASURE TRAN VCE_SAT MIN V(COLLECTOR) FROM=100m TO=200m
+
+* Measure flyback voltage spike
+.MEASURE TRAN VSPIKE_MAX MAX V(COLLECTOR) FROM=200m TO=210m
+
+* Measure power dissipation in transistor
+.MEASURE TRAN P_TRANS AVG V(COLLECTOR)*I(LCOIL) FROM=100m TO=200m
+
+* ============================================================================
+* OUTPUT COMMANDS
+* ============================================================================
+
+* Plot voltages
+.PLOT TRAN V(GPIO5) V(BASE) V(COLLECTOR)
+
+* Plot currents
+.PLOT TRAN I(R1) I(LCOIL) I(D1)
+
+* ============================================================================
+* INITIAL CONDITIONS
+* ============================================================================
+.IC V(COLLECTOR)=12
+
+* ============================================================================
+* SIMULATION OPTIONS
+* ============================================================================
+.OPTIONS RELTOL=1e-4
+.OPTIONS ABSTOL=1e-12
+.OPTIONS VNTOL=1e-6
+.OPTIONS ITL1=500
+.OPTIONS ITL4=50
+
+* ============================================================================
+* EXPECTED RESULTS
+* ============================================================================
+* Base current (IB): ~2.6mA when GPIO5 = 3.3V
+* Collector current (IC): ~30mA when transistor ON
+* VCE(sat): ~0.2-0.3V when transistor saturated
+* Flyback spike: <50V with diode, >300V without diode
+* Power in transistor: ~10mW average
+
+* ============================================================================
+* NETLIST CONNECTIONS SUMMARY
+* ============================================================================
+* Node 0:           Ground (common reference)
+* Node GPIO5:       ESP8266 GPIO5 output (3.3V signal)
+* Node BASE:        Transistor base
+* Node COLLECTOR:   Transistor collector / Relay coil negative
+* Node VCC:         +12V supply
+* Node NODE1:       Internal node (coil resistance to inductance)
+
+* ============================================================================
+* CIRCUIT VERIFICATION
+* ============================================================================
+* 1. Check base current: Should be ~2.6mA
+* 2. Check collector current: Should be ~30mA
+* 3. Check VCE saturation: Should be <0.5V
+* 4. Verify flyback protection: Collector voltage spike <50V
+* 5. Confirm relay operates: IC > 20mA (75% of nominal)
+
+.END
+
+* ============================================================================
+* USAGE INSTRUCTIONS
+* ============================================================================
+* To simulate this circuit:
+* 1. Save this file as "esp8266_relay.cir"
+* 2. Run with LTspice: "ltspice esp8266_relay.cir"
+* 3. Run with ngspice: "ngspice esp8266_relay.cir"
+* 4. Run with SPICE: "spice < esp8266_relay.cir"
+*
+* Alternative simulators:
+* - LTspice (recommended, free from Analog Devices)
+* - ngspice (open source)
+* - TINA-TI (free from Texas Instruments)
+* - Multisim (commercial)
+* - PSpice (commercial)
+*
+* To modify GPIO signal:
+* Change VESP line to adjust timing:
+* VESP GPIO5 0 PULSE(Vlow Vhigh Tdelay Trise Tfall Ton Tperiod)
+*
+* Example for 1Hz square wave, 50% duty cycle:
+* VESP GPIO5 0 PULSE(0 3.3 0 1u 1u 500m 1)
+*
+* Example for single pulse:
+* VESP GPIO5 0 PULSE(0 3.3 10m 1u 1u 100m 1)
+
+* ============================================================================
+* NOTES
+* ============================================================================
+* 1. Relay contact switching is not modeled (mechanical operation)
+* 2. ESP8266 power supply not included (separate USB power)
+* 3. Load connected to relay contacts not modeled
+* 4. Relay coil inductance estimated at 100mH (typical value)
+* 5. Models are generic - actual component parameters may vary
+* 6. Temperature effects not included
+* 7. Parasitic capacitances included in transistor model
+* 8. Relay contact bounce not modeled
+
+* ============================================================================
+* TROUBLESHOOTING SIMULATION
+* ============================================================================
+* If simulation fails to converge:
+* 1. Increase RELTOL: .OPTIONS RELTOL=1e-3
+* 2. Increase ITL4: .OPTIONS ITL4=100
+* 3. Add series resistance to inductance
+* 4. Use smaller time steps
+* 5. Check for floating nodes
+* 6. Verify component values
+
+* If results unexpected:
+* 1. Verify node connections
+* 2. Check component polarities
+* 3. Confirm model parameters
+* 4. Review measurement windows
+* 5. Plot intermediate node voltages

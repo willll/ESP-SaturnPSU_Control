@@ -1,0 +1,345 @@
+================================================================================
+        ESP8266 NodeMCU to Omron G6B-1114P-US Relay Control Circuit
+                         CIRCUIT SCHEMATIC DIAGRAM
+================================================================================
+
+                                    +12V DC POWER SUPPLY
+                                        │
+                                        │ +12V
+                                        │
+                   ┌────────────────────┴────────────────────┐
+                   │                    │                     │
+                   │                    │                   ──┴──  Cathode (−)
+                   │                    │                   ╱   ╲  (Stripe)
+                   │                    │                  │  D1 │ 1N4007
+                   │                    │                   ╲   ╱  Flyback
+                   │                    │                   ──┬──  Diode
+                   │                    │                     │ Anode (+)
+                   │                    │                     │
+                   │             ┌──────┴──────┐              │
+                   │             │             │              │
+                   │             │   RELAY K1  │              │
+                   │             │  G6B-1114P  │              │
+                   │             │   -US 12V   │              │
+                   │             │             │              │
+                   │         (1) │●  COIL  ●│ (2)            │
+                   │    Coil +   │             │  Coil −      │
+                   └─────────────┤   ┌───┐     ├──────────────┘
+                                 │   │ ~ │     │
+                                 │   │ ~ │     │
+                                 │   │ ~ │     │
+                                 │   └───┘     │
+                                 │             │
+                                 │             │
+                                 │ (3)     (4) │
+                                 │  ●       ●  │
+                                 └──┬───────┬──┘
+                                    │       │
+                                   COM      NO
+                                    │       │
+                                    │       │
+                               (To Load Switching)
+
+
+                   ┌─────────────────────────────────────────┐
+                   │                                         │
+                   │        ESP8266 NodeMCU                  │
+                   │        ESP-12E CP2102                   │
+                   │                                         │
+                   │  ┌──────────────────────────┐           │
+                   │  │                          │           │
+    ┌──────────┐   │  │      ESP8266-12E         │           │
+    │ USB 5V   ├───┤  │      WiFi Module         │           │
+    │ Power    │   │  │                          │           │
+    └──────────┘   │  └──────────────────────────┘           │
+                   │                                         │
+                   │                                         │
+                   │  D1 (GPIO5) ●───────────┐               │
+                   │                         │               │
+                   │                         │               │
+                   │  GND         ●──────────┼───────┐       │
+                   │                         │       │       │
+                   └─────────────────────────┼───────┼───────┘
+                                             │       │
+                                             │       │
+                      3.3V Signal            │       │
+                      (Control)              │       │
+                                             │       │
+                                         ┌───┴───┐   │
+                                         │       │   │
+                                         │  R1   │   │
+                                         │ 1kΩ   │   │
+                                         │       │   │
+                                         └───┬───┘   │
+                                             │       │
+                                             │ Base  │
+                                             ▼       │
+                                           ┌─┴─┐     │
+                                           │╱ ╲│     │
+                                      C ───┤   ├     │  Q1: 2N2222
+                                           │╲ ╱│     │  NPN Transistor
+                                           └─┬─┘     │
+                                             │       │
+                                             │ Emitter
+                                             ▼       │
+                                             │       │
+                                          ═══╧═══════╧═══  Common GND
+                                            GND
+                                             │
+                                             │
+                                          12V DC (−)
+
+
+================================================================================
+CONNECTION TABLE
+================================================================================
+
+FROM                    TO                      COMPONENT/WIRE
+-------------------------------------------------------------------------------
+12V Supply (+)    →     Relay Pin 1             Red Wire
+12V Supply (+)    →     Diode D1 Cathode        Red Wire
+12V Supply (−)    →     Common GND              Black Wire
+
+Relay Pin 1       →     Relay Coil (+)          Internal
+Relay Pin 2       →     Relay Coil (−)          Internal
+Relay Pin 2       →     Transistor Q1 Collector Orange Wire
+Relay Pin 2       →     Diode D1 Anode          Orange Wire
+
+Transistor Q1:
+  - Collector     →     Relay Pin 2             Orange Wire
+  - Base          →     Resistor R1 Pin 2       Orange Wire
+  - Emitter       →     Common GND              Black Wire
+
+Resistor R1:
+  - Pin 1         →     ESP8266 D1 (GPIO5)      Orange Wire
+  - Pin 2         →     Transistor Q1 Base      Orange Wire
+
+Diode D1:
+  - Cathode (−)   →     +12V / Relay Pin 1      Red Wire
+  - Anode (+)     →     Relay Pin 2 / Collector Orange Wire
+
+ESP8266 NodeMCU:
+  - D1 (GPIO5)    →     Resistor R1 Pin 1       Orange Wire
+  - GND           →     Common GND              Black Wire
+  - USB           →     5V Power Supply         USB Cable
+
+Relay Contacts:
+  - Pin 3 (COM)   →     Load Common             User Wire
+  - Pin 4 (NO)    →     Load Switched Side      User Wire
+
+
+================================================================================
+SIGNAL FLOW
+================================================================================
+
+CONTROL SIGNAL PATH:
+ESP8266 GPIO5 (3.3V) → R1 (1kΩ) → Q1 Base → Q1 Emitter → GND
+Current: ~2.6mA
+
+POWER SWITCHING PATH (when GPIO5 = HIGH):
++12V → Relay Coil Pin 1 → Relay Coil → Relay Coil Pin 2 → Q1 Collector → 
+Q1 Emitter → GND
+Current: ~30mA
+
+PROTECTION PATH:
+When relay de-energizes, flyback voltage: 
+Relay Coil → D1 Anode → D1 Cathode → +12V (dissipates energy safely)
+
+
+================================================================================
+VOLTAGE AND CURRENT SPECIFICATIONS
+================================================================================
+
+Node                Voltage (V)     Current (mA)    Notes
+-------------------------------------------------------------------------------
++12V Supply         12.0            30-50          Power for relay only
+ESP8266 GPIO5       3.3             2.6            Control signal
+Transistor Base     0.7             2.6            Forward biased
+Transistor Emitter  0               32.6           To ground
+Relay Coil +        12.0            30             When energized
+Relay Coil −        0.2-0.5         30             VCE(sat) voltage
+Common GND          0               32.6           Reference point
+
+
+================================================================================
+COMPONENT STRESS ANALYSIS
+================================================================================
+
+Component       Parameter           Operating   Maximum   Margin    Status
+-------------------------------------------------------------------------------
+Q1 (2N2222)    Collector Current     30mA       600mA     20x       ✓ SAFE
+Q1 (2N2222)    Collector-Emitter V   12V        40V       3.3x      ✓ SAFE
+Q1 (2N2222)    Base Current          2.6mA      -         -         ✓ SAFE
+Q1 (2N2222)    Power Dissipation     ~10mW      500mW     50x       ✓ SAFE
+
+R1 (1kΩ)       Power Dissipation     6.8mW      250mW     37x       ✓ SAFE
+R1 (1kΩ)       Voltage               2.6V       -         -         ✓ SAFE
+
+D1 (1N4007)    Forward Current       30mA       1A        33x       ✓ SAFE
+D1 (1N4007)    Reverse Voltage       12V        1000V     83x       ✓ SAFE
+
+K1 Relay       Coil Voltage          12V        13.2V max 1.1x      ✓ SAFE
+K1 Relay       Coil Current          30mA       -         -         ✓ SAFE
+
+ESP8266 GPIO   Output Current        2.6mA      12mA max  4.6x      ✓ SAFE
+
+
+================================================================================
+OPERATING MODES
+================================================================================
+
+MODE 1: RELAY OFF (GPIO5 = LOW or 0V)
+--------------------------------------
+- Transistor Q1 is OFF (not conducting)
+- No current flows through relay coil
+- Relay contacts: Pin 3 (COM) is OPEN (not connected to Pin 4)
+- Load is OFF
+- System power: ~80mA (ESP8266 only)
+
+MODE 2: RELAY ON (GPIO5 = HIGH or 3.3V)
+----------------------------------------
+- Transistor Q1 is ON (saturated)
+- Current flows: 12V → Relay Coil → Q1 → GND (~30mA)
+- Relay contacts: Pin 3 (COM) is CLOSED to Pin 4 (NO)
+- Load is ON (switched)
+- System power: ~110mA (ESP8266 + relay)
+
+MODE 3: RELAY SWITCHING OFF (GPIO5 transitions HIGH → LOW)
+-----------------------------------------------------------
+- Transistor Q1 turns OFF
+- Relay coil collapses, generating back-EMF (flyback voltage)
+- Diode D1 conducts, providing path for inductive current
+- Energy dissipates through D1 and coil resistance
+- Duration: ~5-10ms
+- Without D1: Voltage spike could exceed 400V and destroy Q1!
+
+
+================================================================================
+DESIGN CALCULATIONS
+================================================================================
+
+BASE RESISTOR CALCULATION (R1):
+--------------------------------
+VCC (ESP8266) = 3.3V
+VBE (Q1) = 0.7V
+IB (desired) = 2-3mA (for IC = 30mA with hFE = 20, worst case)
+
+R1 = (VCC - VBE) / IB
+R1 = (3.3V - 0.7V) / 0.0026A
+R1 = 2.6V / 0.0026A
+R1 = 1000Ω = 1kΩ ✓
+
+Actual IB = 2.6mA
+With hFE = 100 (typical), IC(max) = 260mA (adequate for 30mA relay)
+
+
+TRANSISTOR SATURATION CHECK:
+-----------------------------
+IC (relay) = V / R = 12V / 400Ω = 30mA
+IB (actual) = 2.6mA
+hFE (forced) = IC / IB = 30mA / 2.6mA = 11.5
+
+Since forced hFE << typical hFE, transistor is fully saturated ✓
+VCE(sat) ≈ 0.2-0.3V (collector voltage close to ground)
+
+
+DIODE SELECTION:
+----------------
+Peak flyback voltage (without diode) = L × (dI/dt)
+Estimated: 200-400V for typical relay
+
+1N4007 specs:
+- Reverse voltage: 1000V > 400V ✓
+- Forward current: 1A > 30mA ✓
+- Recovery time: 30µs (adequate for relay switching)
+
+Selection: 1N4007 is appropriate and provides safety margin
+
+
+POWER SUPPLY SIZING:
+--------------------
+Relay coil power = V × I = 12V × 30mA = 360mW
+Safety factor = 2× (for inrush and reliability)
+Minimum supply = 360mW × 2 = 720mW
+
+Recommended: 12V @ 500mA (6W) provides adequate margin ✓
+
+
+================================================================================
+TROUBLESHOOTING GUIDE
+================================================================================
+
+PROBLEM: Relay doesn't click when GPIO5 goes HIGH
+POSSIBLE CAUSES:
+  1. No 12V supply connected → Check power supply
+  2. Common ground not connected → Connect ESP8266 GND to 12V GND
+  3. Wrong GPIO pin → Verify using D1 (GPIO5)
+  4. Transistor damaged or wrong pinout → Check with multimeter
+  5. Diode reversed → Cathode should be at +12V
+
+PROBLEM: Relay clicks but contacts don't switch
+POSSIBLE CAUSES:
+  1. Wrong relay pins used for load → Use Pin 3 (COM) and Pin 4 (NO)
+  2. Load current exceeds relay rating → Check load current vs 5A rating
+  3. Relay contacts welded → Replace relay
+
+PROBLEM: Transistor gets hot
+POSSIBLE CAUSES:
+  1. Transistor not saturating → Check base resistor value (1kΩ)
+  2. Excessive collector current → Measure relay coil current
+  3. Wrong transistor → Verify 2N2222 or equivalent
+
+PROBLEM: ESP8266 resets when relay switches
+POSSIBLE CAUSES:
+  1. Power supply noise → Add 100µF capacitor across 12V supply
+  2. Ground loop → Ensure single-point ground connection
+  3. ESP8266 power supply inadequate → Use 1A USB supply
+
+PROBLEM: Relay stays on permanently
+POSSIBLE CAUSES:
+  1. Transistor shorted → Replace transistor
+  2. GPIO pin stuck HIGH → Check ESP8266 code
+  3. Base resistor open → Check R1 connection
+
+
+================================================================================
+CIRCUIT ENHANCEMENTS (Optional)
+================================================================================
+
+1. LED INDICATOR
+   Add LED + 470Ω resistor in series with relay coil to indicate state
+
+2. MANUAL OVERRIDE
+   Add push button in parallel with transistor C-E for manual testing
+
+3. SNUBBER CIRCUIT
+   Add RC snubber (0.1µF + 100Ω) across relay contacts for AC loads
+
+4. MULTIPLE RELAYS
+   Duplicate Q1/R1/D1/K1 circuit for each additional relay
+   Use different GPIO pins (D2, D3, etc.)
+
+5. OPTOCOUPLER ISOLATION
+   Add 4N35 optocoupler between ESP8266 and transistor for galvanic isolation
+
+6. POWER SUPPLY INTEGRATION
+   Use LM7805 or buck converter to power ESP8266 from 12V supply
+
+
+================================================================================
+PCB LAYOUT RECOMMENDATIONS
+================================================================================
+
+1. Keep high-current paths (12V and relay) short and wide
+2. Place flyback diode physically close to relay coil
+3. Use ground plane for common GND
+4. Separate analog and digital grounds if using ADC
+5. Add mounting holes for relay and ESP8266
+6. Include test points for troubleshooting
+7. Label all connections on silkscreen
+8. Use terminal blocks for external connections
+
+
+================================================================================
+END OF SCHEMATIC DIAGRAM
+================================================================================
