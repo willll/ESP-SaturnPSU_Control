@@ -6,9 +6,21 @@ Suite Setup       Setup Suite
 Suite Teardown    Teardown Suite
 
 *** Variables ***
-${DEVICE_IP}      ${ENV:DEVICE_IP}
-${BASE_URL}       http://${DEVICE_IP}
+${DEVICE_IP}      None
+${BASE_URL}       None
 ${SESSION}        d1session
+
+*** Keywords ***
+Setup Suite
+    ${DEVICE_IP}=    Get Environment Variable    DEVICE_IP    192.168.1.107
+    Set Suite Variable    ${DEVICE_IP}
+    ${BASE_URL}=    Set Variable    http://${DEVICE_IP}
+    Set Suite Variable    ${BASE_URL}
+    Log    Starting ESP8266 D1 Control API tests
+    Create Session    ${SESSION}    ${BASE_URL}
+
+Teardown Suite
+    Log    Test suite finished
 
 *** Test Cases ***
 Power On And WiFi
@@ -45,19 +57,15 @@ Menu Endpoint Returns Status
     ${resp}=  GET On Session    ${SESSION}    /menu
     Should Contain    ${resp.text}    ESP8266 Status
 
-
 Latch ON Reverts After Period
     [Tags]    latch
-    # Set latch period to 2 seconds
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
     Sleep    0.2s
-    # Set D1 OFF to start
     POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
-    # Toggle ON and verify auto-revert
     POST On Session    ${SESSION}    /api/on
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/status
@@ -68,16 +76,13 @@ Latch ON Reverts After Period
 
 Latch Disabled (0) Does Not Revert
     [Tags]    latch
-    # Set latch period to 0 (disable)
     ${body}=    Create Dictionary    latch=0
     POST On Session    ${SESSION}    /api/latch    json=${body}
     Sleep    0.2s
-    # Set D1 OFF to start
     POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
-    # Toggle ON and verify no auto-revert
     POST On Session    ${SESSION}    /api/on
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/status
@@ -86,10 +91,72 @@ Latch Disabled (0) Does Not Revert
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    1
 
-*** Keywords ***
-Setup Suite
-    Log    Starting ESP8266 D1 Control API tests
-    Create Session    ${SESSION}    ${BASE_URL}
+Latch Rejects State Change During Active Period
+    [Tags]    latch    enforcement
+    ${body}=    Create Dictionary    latch=2
+    POST On Session    ${SESSION}    /api/latch    json=${body}
+    Sleep    0.2s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    0.5s
+    POST On Session    ${SESSION}    /api/on
+    Sleep    0.2s
+    ${resp}=  POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    423
+    Should Contain    ${resp.text}    Latch active
+    Sleep    2.2s
+    ${resp}=  POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    200
 
-Teardown Suite
-    Log    Test suite finished
+Default Latch Value On Reset
+    [Tags]    latch    default
+    Log    Manual: After device reset, GET /api/status should show latch=5
+
+Latch Min/Max Enforced By API
+    [Tags]    latch    constraints
+    ${body}=    Create Dictionary    latch=0
+    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    Should Be True    ${resp.json()['latch']} >= 1
+    ${body}=    Create Dictionary    latch=9999
+    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    Should Be True    ${resp.json()['latch']} <= 3600
+
+# Edge Cases
+Rapid State Change Requests During Latch
+    [Tags]    latch    edge
+    ${body}=    Create Dictionary    latch=2
+    POST On Session    ${SESSION}    /api/latch    json=${body}
+    Sleep    0.2s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    0.5s
+    POST On Session    ${SESSION}    /api/on
+    Sleep    0.2s
+    ${resp}=  POST On Session    ${SESSION}    /api/on
+    Should Be Equal As Integers    ${resp.status_code}    423
+    ${resp}=  POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    423
+    ${resp}=  POST On Session    ${SESSION}    /api/toggle
+    Should Be Equal As Integers    ${resp.status_code}    423
+    Sleep    2.2s
+    ${resp}=  POST On Session    ${SESSION}    /api/toggle
+    Should Be Equal As Integers    ${resp.status_code}    200
+
+Invalid Latch Values Are Handled
+    [Tags]    latch    edge    constraints
+    ${body}=    Create Dictionary    latch=-5
+    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    Should Be True    ${resp.json()['latch']} >= 1
+    ${body}=    Create Dictionary    latch=abc
+    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    Should Be True    ${resp.json()['latch']} >= 1
+
+Latch Timer Reset On Expiry
+    [Tags]    latch    edge
+    ${body}=    Create Dictionary    latch=1
+    POST On Session    ${SESSION}    /api/latch    json=${body}
+    Sleep    0.2s
+    POST On Session    ${SESSION}    /api/off
+    Sleep    0.5s
+    POST On Session    ${SESSION}    /api/on
+    Sleep    1.2s
+    ${resp}=  POST On Session    ${SESSION}    /api/on
+    Should Be Equal As Integers    ${resp.status_code}    200
