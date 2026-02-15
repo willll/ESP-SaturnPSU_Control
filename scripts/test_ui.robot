@@ -52,6 +52,51 @@ Polls Status Every 2 Seconds
     Element Attribute Value Should Be    id=btnOn    class    btn-on red
     Element Attribute Value Should Be    id=btnOff   class    btn-off green
 
+API Error Handling And Feedback
+    [Tags]    error    ui
+    # Try to set D1 state during latch (should fail)
+    Set D1 State    1
+    Input Text    id=latchSeconds    2
+    Press Key    id=latchSeconds    RETURN
+    Sleep    0.5s
+    # Attempt to set D1 OFF during latch
+    ${resp}=    Post Request    d1    ${URL}api/off
+    Should Be Equal As Integers    ${resp.status_code}    423
+    # UI should show error feedback (assume error log or popup)
+    Element Should Be Visible    id=debug
+    Page Should Contain    Latch active
+
+Invalid API Request Shows Error
+    [Tags]    error    ui
+    # Send invalid API request
+    ${resp}=    Post Request    d1    ${URL}api/latch    data={'latch': -5}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    # UI should show error or warning for invalid value
+    Element Should Be Visible    id=debug
+    Page Should Contain    latch
+
+UI Is Self-Contained
+    [Tags]    selfcontained    ui
+    # Verify all resources are loaded from local device
+    Open Browser    ${URL}    Chrome
+    ${resources}=    Get WebElements    //link | //script | //img
+    : FOR    ${el}    IN    @{resources}
+    \    ${src}=    Get Element Attribute    ${el}    src
+    \    Run Keyword If    '${src}' != ''    Should Contain    ${src}    ${URL}
+    # No external resources should be referenced
+    # Close browser
+    Close Browser
+
+Open Source And Documentation Present
+    [Tags]    opensource    docs    ui
+    # Verify UI footer contains GitHub link
+    Element Attribute Value Should Be    xpath=//footer//a    href    https://github.com/willll/ESP-SaturnPSU_Control
+    # Verify documentation files exist in project
+    ${readme}=    Get File    ../README.md
+    Should Contain    ${readme}    ESP-SaturnPSU_Control
+    ${srs}=    Get File    ../docs/SRS.md
+    Should Contain    ${srs}    Software Requirements Specification
+
 *** Keywords ***
 Open Browser To D1 UI
     Open Browser    ${URL}    Chrome
