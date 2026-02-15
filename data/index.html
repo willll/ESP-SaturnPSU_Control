@@ -6,7 +6,6 @@
   <title>D1 Control</title>
   <style>
 /* style.css content start */
-/* Paste style.css content here */
 body {
   font-family: Arial, sans-serif;
   background: #222;
@@ -32,7 +31,6 @@ h1 {
   margin-bottom: 1em;
 }
 .btn-on, .btn-off, button {
-  background: #4caf50;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -40,6 +38,18 @@ h1 {
   font-size: 1em;
   cursor: pointer;
   transition: background 0.2s;
+}
+.btn-on.green {
+  background: #4caf50 !important;
+}
+.btn-on.red {
+  background: #e53935 !important;
+}
+.btn-off.green {
+  background: #4caf50 !important;
+}
+.btn-off.red {
+  background: #e53935 !important;
 }
 .btn-off, .secondary {
   background: #888;
@@ -86,11 +96,14 @@ input[type="number"] {
     </div>
     <div class="field">
       <label for="latchSeconds">Latch period (seconds)</label>
-      <input id="latchSeconds" type="number" min="0" step="1" value="5" />
+      <input id="latchSeconds" type="number" min="1" max="3600" step="1" value="5" />
     </div>
     <div class="debug" id="debug">Debug log...</div>
   </div>
 
+  <footer style="text-align:center; margin-top:2em; color:#888; font-size:0.95em;">
+    <a href="https://github.com/willll/ESP-SaturnPSU_Control" target="_blank" style="color:#8cf; text-decoration:none;">View on GitHub: ESP-SaturnPSU_Control</a>
+  </footer>
   <script>
 // main.js content start
 const debugLines = [];
@@ -100,7 +113,7 @@ function debug(msg) {
   // Keep last 10 messages
   debugLines.push(msg);
   if (debugLines.length > 10) debugLines.shift();
-  document.getElementById('debug').textContent = debugLines.join('\n');
+  document.getElementById('debug').innerHTML = debugLines.map(line => line.replace(/</g, '&lt;')).join('<br>');
 }
 
 function setState(state) {
@@ -146,10 +159,28 @@ function updateStatus(data) {
     'D1: ' + (data.d1 === '1' ? 'ON' : 'OFF') +
     ' | Latch: ' + data.latch + 's';
   document.getElementById('latchSeconds').value = data.latch;
+
+  // Set ON/OFF button colors according to D1 status
+  const btnOn = document.getElementById('btnOn');
+  const btnOff = document.getElementById('btnOff');
+  if (data.d1 === '1') {
+    btnOn.classList.add('green');
+    btnOn.classList.remove('red');
+    btnOff.classList.add('red');
+    btnOff.classList.remove('green');
+  } else {
+    btnOn.classList.add('red');
+    btnOn.classList.remove('green');
+    btnOff.classList.add('green');
+    btnOff.classList.remove('red');
+  }
 }
 
 document.getElementById('latchSeconds').addEventListener('change', function() {
-  const val = parseInt(this.value, 10) || 0;
+  let val = parseInt(this.value, 10) || 5;
+  if (val < 1) val = 1;
+  if (val > 3600) val = 3600;
+  this.value = val;
   debug('POST /api/latch ...');
   fetch('/api/latch', {
     method: 'POST',
@@ -174,7 +205,11 @@ document.getElementById('latchSeconds').addEventListener('change', function() {
 });
 
 refresh();
+// Poll every 2 seconds to keep UI in sync with backend
+setInterval(refresh, 2000);
 // main.js content end
   </script>
+  </body>
+  </html>
 </body>
 </html>
