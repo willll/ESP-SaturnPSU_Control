@@ -30,8 +30,8 @@ docker run --rm \
     if command -v robotframework-ctrf >/dev/null 2>&1; then
       robotframework-ctrf results/combined_output.xml > results/ctrt_report.json;
       echo "CTRF report generated at results/ctrt_report.json";
-      if command -v ctrf-html-reporter >/dev/null 2>&1; then
-        ctrf-html-reporter results/ctrt_report.json results/ctrt_report.html;
+      if npx --no-install ctrf-html-reporter --version >/dev/null 2>&1; then
+        npx ctrf-html-reporter results/ctrt_report.json results/ctrt_report.html;
         echo "HTML report generated at results/ctrt_report.html";
       else
         echo "ctrf-html-reporter not found. Install with: npm install -g ctrf-html-reporter";
