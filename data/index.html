@@ -4,7 +4,75 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>D1 Control</title>
-  <link rel="stylesheet" href="/style.css">
+  <style>
+/* style.css content start */
+/* Paste style.css content here */
+body {
+  font-family: Arial, sans-serif;
+  background: #222;
+  color: #eee;
+  margin: 0;
+  padding: 0;
+}
+.card {
+  background: #333;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #000a;
+  margin: 2em auto;
+  max-width: 400px;
+  padding: 2em;
+}
+h1 {
+  font-size: 1.5em;
+  margin-bottom: 1em;
+}
+.row {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1em;
+}
+.btn-on, .btn-off, button {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-off, .secondary {
+  background: #888;
+}
+.btn-on:hover, .btn-off:hover, button:hover {
+  background: #388e3c;
+}
+.btn-off:hover, .secondary:hover {
+  background: #666;
+}
+.status {
+  margin-bottom: 1em;
+  font-weight: bold;
+}
+.field {
+  margin-bottom: 1em;
+}
+input[type="number"] {
+  width: 4em;
+  padding: 0.2em;
+  border-radius: 3px;
+  border: 1px solid #555;
+  background: #222;
+  color: #eee;
+}
+.debug {
+  font-size: 0.9em;
+  color: #aaa;
+  margin-top: 1em;
+  word-break: break-all;
+}
+/* style.css content end */
+  </style>
 </head>
 <body>
   <div class="card">
@@ -23,6 +91,90 @@
     <div class="debug" id="debug">Debug log...</div>
   </div>
 
-  <script src="/main.js"></script>
+  <script>
+// main.js content start
+const debugLines = [];
+function debug(msg) {
+  // Log to browser console
+  console.log(msg);
+  // Keep last 10 messages
+  debugLines.push(msg);
+  if (debugLines.length > 10) debugLines.shift();
+  document.getElementById('debug').textContent = debugLines.join('\n');
+}
+
+function setState(state) {
+  debug('POST /api/' + state + ' ...');
+  fetch('/api/' + state, {method: 'POST'})
+    .then(response => {
+      if (!response.ok) {
+        response.text().then(text => {
+          debug('API error: ' + response.status + ' ' + text);
+          alert('API error: ' + response.status + '\n' + text);
+        });
+        return;
+      }
+      debug('POST /api/' + state + ' success');
+      refresh();
+    })
+    .catch(e => {
+      debug('Fetch error: ' + e);
+      alert('Fetch error: ' + e);
+    });
+}
+
+function refresh() {
+  debug('GET /api/status ...');
+  fetch('/api/status')
+    .then(r => {
+      if (!r.ok) {
+        r.text().then(text => {
+          debug('API error: ' + r.status + ' ' + text);
+          alert('API error: ' + r.status + '\n' + text);
+        });
+        return Promise.reject('API error');
+      }
+      debug('GET /api/status success');
+      return r.json();
+    })
+    .then(updateStatus)
+    .catch(e => debug('Error: ' + e));
+}
+
+function updateStatus(data) {
+  document.getElementById('status').textContent =
+    'D1: ' + (data.d1 === '1' ? 'ON' : 'OFF') +
+    ' | Latch: ' + data.latch + 's';
+  document.getElementById('latchSeconds').value = data.latch;
+}
+
+document.getElementById('latchSeconds').addEventListener('change', function() {
+  const val = parseInt(this.value, 10) || 0;
+  debug('POST /api/latch ...');
+  fetch('/api/latch', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({latch: val})
+  })
+    .then(response => {
+      if (!response.ok) {
+        response.text().then(text => {
+          debug('API error: ' + response.status + ' ' + text);
+          alert('API error: ' + response.status + '\n' + text);
+        });
+        return;
+      }
+      debug('POST /api/latch success');
+      refresh();
+    })
+    .catch(e => {
+      debug('Fetch error: ' + e);
+      alert('Fetch error: ' + e);
+    });
+});
+
+refresh();
+// main.js content end
+  </script>
 </body>
 </html>
