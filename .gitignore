@@ -6,3 +6,4 @@
 .vscode/
 *.log
 data/wifi.json
+results/api_output.xml
