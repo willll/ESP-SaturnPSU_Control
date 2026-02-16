@@ -103,7 +103,7 @@ Latch Lockout Prevents Frequent Changes
     POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/on
-    Sleep    0.2s
+    Sleep    0.1s
     # Try to change state during latch (should fail)
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
