@@ -1,6 +1,6 @@
 ## Latch Functionality Requirement
 
-- The latch period can be disabled by setting it to 0 (disables auto-revert). The minimum allowed value for the latch (if enabled) is 1 second. Any attempt to set the latch to a negative value or above the maximum must be rejected.
+- The latch period is a lockout interval that prevents frequent state changes. When a state change (ON, OFF, TOGGLE) occurs, further changes are blocked for the latch period. After the latch period expires, the relay state remains as set; it does not auto-revert. The latch period can be disabled by setting it to 0 (no lockout). The minimum allowed value for the latch (if enabled) is 1 second. Any attempt to set the latch to a negative value or above the maximum must be rejected.
 # Software Requirements Specification (SRS)
 
 ## Project: ESP-SaturnPSU_Control
@@ -76,7 +76,7 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - [FR4] The UI shall display the current D1 state and latch period
 - [FR5] The UI shall visually highlight the ON/OFF button matching D1 state
 - [FR6] The UI shall show a debug log of recent actions
-- [FR7] The UI shall poll the backend for status updates every 2 seconds
+- [FR7] The UI shall poll the backend for status updates every 200 milliseconds
 - [FR8] The system shall provide a link to the GitHub project in the UI footer
 - [FR9] The system shall support automated build, upload, and monitor via script
 

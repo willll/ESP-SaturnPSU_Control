@@ -80,42 +80,39 @@ Menu Endpoint Returns Status
     ${resp}=  GET On Session    ${SESSION}    /menu
     Should Contain    ${resp.text}    ESP8266 Status
 
-Latch ON Reverts After Period
+Latch Lockout Prevents Frequent Changes
     [Tags]    latch
     POST On Session    ${SESSION}    /api/reset
     Sleep    0.5s
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.5s
-    POST On Session    ${SESSION}    /api/off
-    Sleep    1.0s
+    POST On Session    ${SESSION}    /api/on
+    Sleep    0.2s
+    # Try to change state during latch (should fail)
+    ${resp}=  POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    423
+    # Wait for latch to expire
+    Sleep    2.2s
+    # Now OFF should succeed
+    ${resp}=  POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
-    POST On Session    ${SESSION}    /api/on
-    Sleep    1.0s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    1
-    Sleep    3.0s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 
-Latch Disabled (0) Does Not Revert
+Latch Disabled (0) Allows Immediate Changes
     [Tags]    latch
     POST On Session    ${SESSION}    /api/reset
     Sleep    0.5s
     ${body}=    Create Dictionary    latch=0
     ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
-    Should Be True    ${resp.json()['latch']} >= 1
+    Should Be True    ${resp.json()['latch']} == 0
     Sleep    0.5s
-    POST On Session    ${SESSION}    /api/off
-    Sleep    1.0s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    0
     POST On Session    ${SESSION}    /api/on
-    Sleep    1.0s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    1
-    Sleep    3.0s
+    Should Be Equal As Integers    ${resp.status_code}    200
+    POST On Session    ${SESSION}    /api/off
+    Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 

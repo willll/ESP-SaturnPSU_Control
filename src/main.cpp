@@ -31,7 +31,6 @@ static String lastWifiError;
  */
 static uint32_t latchPeriodMs = 5000; // Default: 5 seconds
 static uint32_t latchTimerExpiry = 0;
-static int lastLatchedState = -1;
 
 /**
  * @struct WifiConfig
@@ -227,20 +226,7 @@ static void handleIndex() {
 }
 
 
-// Start or clear the latch timer for auto-revert
-/**
- * @brief Start or clear the latch timer for auto-revert
- * @param revertState State to revert to after latch period
- */
-static void startLatchTimer(int revertState) {
-  if (latchPeriodMs > 0) {
-    latchTimerExpiry = millis() + latchPeriodMs;
-    lastLatchedState = revertState;
-  } else {
-    latchTimerExpiry = 0;
-    lastLatchedState = -1;
-  }
-}
+
 
 // Handle /api/on: set D1 HIGH, start latch timer
 /**
@@ -259,7 +245,6 @@ static void handleOn() {
   digitalWrite(kD1Pin, HIGH);
   // Only start latch timer on ON, not OFF
   latchTimerExpiry = millis() + latchPeriodMs;
-  lastLatchedState = LOW; // Always revert to LOW after period
   sendJsonStatus();
 }
 
@@ -276,7 +261,6 @@ static void handleOff() {
   digitalWrite(kD1Pin, LOW);
   // Do not start latch timer on OFF; just set LOW
   latchTimerExpiry = 0;
-  lastLatchedState = -1;
   sendJsonStatus();
 }
 
@@ -300,12 +284,10 @@ static void handleToggle() {
     // Use ON logic
     digitalWrite(kD1Pin, HIGH);
     latchTimerExpiry = millis() + latchPeriodMs;
-    lastLatchedState = LOW;
   } else {
     // Use OFF logic
     digitalWrite(kD1Pin, LOW);
     latchTimerExpiry = 0;
-    lastLatchedState = -1;
   }
   sendJsonStatus();
 }
@@ -380,7 +362,6 @@ void setup() {
   // Expose /api/v1/reset endpoint for test setup (clears latch and sets D1 LOW)
   server.on("/api/v1/reset", HTTP_POST, []() {
     latchTimerExpiry = 0;
-    lastLatchedState = -1;
     digitalWrite(kD1Pin, LOW);
     server.send(200, "application/json", "{\"reset\":true}");
   });
@@ -395,12 +376,9 @@ void setup() {
  */
 void loop() {
   server.handleClient();
-  // Improved latch timer logic: always clear latch and revert D1 LOW immediately after expiry
+  // Latch timer logic: after expiry, allow state changes again, but do not auto-revert relay state
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
-    digitalWrite(kD1Pin, LOW);
     latchTimerExpiry = 0;
-    lastLatchedState = -1;
-    delay(10); // Small delay to ensure hardware state update
   }
 
   if (Serial.available() > 0) {
