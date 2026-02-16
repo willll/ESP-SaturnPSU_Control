@@ -15,7 +15,7 @@ This document describes the recommended test campaign for the ESP8266 D1 Control
 - [ ] `GET /api/status` returns current D1 state as JSON
 - [ ] `GET /menu` returns plain-text status
 - [ ] All endpoints handle errors (invalid method, malformed request)
-- [ ] `POST /api/reset` clears latch and sets D1 LOW for test setup
+- [ ] `POST /api/v1/reset` clears latch and sets D1 LOW for test setup
 
 ### 1.3. Latch Logic
 - [ ] Setting ON or OFF with a latch period reverts state after the correct time
