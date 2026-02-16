@@ -1,3 +1,18 @@
+Latch Disables Buttons After Off
+    [Tags]    latch    ui
+    POST On Session    ${SESSION}    /api/v1/reset
+    Sleep    0.5s
+    ${body}=    Create Dictionary    latch=2
+    POST On Session    ${SESSION}    /api/v1/latch    json=${body}
+    Sleep    0.5s
+    POST On Session    ${SESSION}    /api/v1/off
+    Sleep    0.2s
+    ${resp}=  GET On Session    ${SESSION}    /api/v1/status
+    Should Be True    ${resp.json()['latch_timer_active']} == True
+    # Wait for latch to expire
+    Sleep    2.2s
+    ${resp}=  GET On Session    ${SESSION}    /api/v1/status
+    Should Be True    ${resp.json()['latch_timer_active']} == False
 *** Settings ***
 Library           RequestsLibrary
 Library           OperatingSystem
@@ -58,7 +73,7 @@ POST Off Sets D1 Low
 POST Toggle Flips D1
     [Tags]    api
     # Reset latch and D1 state
-    POST On Session    ${SESSION}    /api/reset
+    POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
     ${before}=  GET On Session    ${SESSION}    /api/status
     ${prev}=    Set Variable    ${before.json()['d1']}
