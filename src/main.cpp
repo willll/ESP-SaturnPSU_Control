@@ -11,32 +11,28 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
-// GPIO pin for relay control
 /**
- * @brief GPIO pin for relay/relay control (D1)
+ * GPIO pin for relay/relay control (D1)
  */
 static const uint8_t kD1Pin = D1;
 
-// HTTP server on port 80
 /**
- * @brief HTTP server on port 80
+ * HTTP server on port 80
  */
 static ESP8266WebServer server(80);
-// Last WiFi error message for diagnostics
+
 /**
- * @brief Last WiFi error message for diagnostics
+ * Last WiFi error message for diagnostics
  */
 static String lastWifiError;
 
-// Latch period (ms), timer expiry, and last state for auto-revert
 /**
- * @brief Latch period (ms), timer expiry, and last state for auto-revert
+ * Latch period (ms), timer expiry, and last state for auto-revert
  */
-static uint32_t latchPeriodMs = 5000; ///< Default: 5 seconds
+static uint32_t latchPeriodMs = 5000; // Default: 5 seconds
 static uint32_t latchTimerExpiry = 0;
 static int lastLatchedState = -1;
 
-// WiFi configuration structure
 /**
  * @struct WifiConfig
  * @brief WiFi configuration structure
@@ -154,7 +150,6 @@ static String buildMenuText(const WifiConfig &cfg) {
   return text;
 }
 
-// Print status menu to serial
 /**
  * @brief Print status menu to serial
  * @param cfg WiFi config
@@ -165,7 +160,7 @@ static void printMenu(const WifiConfig &cfg) {
 
 // Handle /menu endpoint (plain text status)
 /**
- * @brief Handle /menu endpoint (plain text status)
+ * Handle /menu endpoint (plain text status)
  */
 static void handleMenu() {
   WifiConfig cfg;
@@ -186,9 +181,8 @@ static void sendJsonStatus() {
 }
 
 // GET returns {"latch": seconds}, POST sets latch period (seconds)
-// Handle /api/latch GET/POST: get or set latch period
 /**
- * @brief Handle /api/latch GET/POST: get or set latch period
+ * Handle /api/latch GET/POST: get or set latch period
  * @endpoint /api/latch (GET, POST)
  */
 static void handleLatch() {
@@ -228,7 +222,6 @@ static void handleIndex() {
     server.send(404, "text/plain", "index.html not found");
     return;
   }
-
   server.streamFile(file, "text/html");
   file.close();
 }
@@ -264,7 +257,9 @@ static void handleOn() {
     return;
   }
   digitalWrite(kD1Pin, HIGH);
-  startLatchTimer(LOW);
+  // Only start latch timer on ON, not OFF
+  latchTimerExpiry = millis() + latchPeriodMs;
+  lastLatchedState = LOW; // Always revert to LOW after period
   sendJsonStatus();
 }
 
@@ -279,7 +274,9 @@ static void handleOff() {
     return;
   }
   digitalWrite(kD1Pin, LOW);
-  startLatchTimer(HIGH);
+  // Do not start latch timer on OFF; just set LOW
+  latchTimerExpiry = 0;
+  lastLatchedState = -1;
   sendJsonStatus();
 }
 
@@ -288,14 +285,28 @@ static void handleOff() {
  * @brief Handle /api/toggle: toggle D1, start latch timer
  * @endpoint /api/toggle (POST)
  */
+// Handle /api/toggle: toggle D1, using ON/OFF logic and latch respect
+/**
+ * @brief Handle /api/toggle: toggle D1, using ON/OFF logic and latch respect
+ * @endpoint /api/toggle (POST)
+ */
 static void handleToggle() {
   if (isLatchActive()) {
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
-  int newState = !digitalRead(kD1Pin);
-  digitalWrite(kD1Pin, newState);
-  startLatchTimer(newState ? LOW : HIGH);
+  int current = digitalRead(kD1Pin);
+  if (current == LOW) {
+    // Use ON logic
+    digitalWrite(kD1Pin, HIGH);
+    latchTimerExpiry = millis() + latchPeriodMs;
+    lastLatchedState = LOW;
+  } else {
+    // Use OFF logic
+    digitalWrite(kD1Pin, LOW);
+    latchTimerExpiry = 0;
+    lastLatchedState = -1;
+  }
   sendJsonStatus();
 }
 
@@ -357,14 +368,22 @@ void setup() {
   printMenu(cfg);
 
   server.on("/", HTTP_GET, handleIndex);
-  server.on("/api/status", HTTP_GET, sendJsonStatus);
-  server.on("/api/on", HTTP_POST, handleOn);
-  server.on("/api/off", HTTP_POST, handleOff);
-  server.on("/api/toggle", HTTP_POST, handleToggle);
+  server.on("/api/v1/status", HTTP_GET, sendJsonStatus);
+  server.on("/api/v1/on", HTTP_POST, handleOn);
+  server.on("/api/v1/off", HTTP_POST, handleOff);
+  server.on("/api/v1/toggle", HTTP_POST, handleToggle);
 
   server.on("/menu", HTTP_GET, handleMenu);
-  server.on("/api/latch", HTTP_GET, handleLatch);
-  server.on("/api/latch", HTTP_POST, handleLatch);
+  server.on("/api/v1/latch", HTTP_GET, handleLatch);
+  server.on("/api/v1/latch", HTTP_POST, handleLatch);
+
+  // Expose /api/v1/reset endpoint for test setup (clears latch and sets D1 LOW)
+  server.on("/api/v1/reset", HTTP_POST, []() {
+    latchTimerExpiry = 0;
+    lastLatchedState = -1;
+    digitalWrite(kD1Pin, LOW);
+    server.send(200, "application/json", "{\"reset\":true}");
+  });
 
   server.begin();
   Serial.println("HTTP server started");
@@ -376,23 +395,14 @@ void setup() {
  */
 void loop() {
   server.handleClient();
-  // Improved latch timer logic: always clear latch and revert D1 immediately after expiry
-  if (latchTimerExpiry > 0 && millis() > latchTimerExpiry && lastLatchedState != -1) {
-    digitalWrite(kD1Pin, lastLatchedState);
+  // Improved latch timer logic: always clear latch and revert D1 LOW immediately after expiry
+  if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
+    digitalWrite(kD1Pin, LOW);
     latchTimerExpiry = 0;
     lastLatchedState = -1;
-    // Extra: ensure D1 is available for state change immediately
     delay(10); // Small delay to ensure hardware state update
   }
 
-  // Helper: forcibly clear latch for test setup (optional, not exposed by default)
-  // Uncomment below to expose /api/reset endpoint for tests
-  // server.on("/api/reset", HTTP_POST, []() {
-  //   latchTimerExpiry = 0;
-  //   lastLatchedState = -1;
-  //   digitalWrite(kD1Pin, LOW);
-  //   server.send(200, "application/json", "{\"reset\":true}");
-  // });
   if (Serial.available() > 0) {
     int c = Serial.read();
     if (c == 'm' || c == 'M' || c == '?') {

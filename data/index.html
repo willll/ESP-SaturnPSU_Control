@@ -30,7 +30,44 @@ h1 {
   gap: 1em;
   margin-bottom: 1em;
 }
-.btn-on, .btn-off, button {
+button {
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-on {
+  background: #4caf50;
+}
+.btn-on.red {
+  background: #e53935 !important;
+}
+.btn-on.green {
+  background: #4caf50 !important;
+}
+.btn-off {
+  background: #888;
+}
+.btn-off.green {
+  background: #4caf50 !important;
+}
+.btn-off.red {
+  background: #e53935 !important;
+}
+.btn-toggle {
+  background: #1976d2 !important; /* blue */
+}
+.btn-refresh {
+  background: #ffd600 !important; /* yellow */
+  color: #222 !important;
+}
+button:disabled, .btn-on:disabled, .btn-off:disabled, .btn-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -90,9 +127,9 @@ input[type="number"] {
     <div class="status" id="status">Loading...</div>
     <div class="row">
       <button class="btn-on" id="btnOn" onclick="setState('on')">On</button>
-      <button class="btn-off secondary" id="btnOff" onclick="setState('off')">Off</button>
-      <button onclick="setState('toggle')">Toggle</button>
-      <button class="secondary" onclick="refresh()">Refresh</button>
+      <button class="btn-off" id="btnOff" onclick="setState('off')">Off</button>
+      <button class="btn-toggle" id="btnToggle" onclick="setState('toggle')">Toggle</button>
+      <button class="btn-refresh" id="btnRefresh" onclick="refresh()">Refresh</button>
     </div>
     <div class="field">
       <label for="latchSeconds">Latch period (seconds)</label>
@@ -117,8 +154,8 @@ function debug(msg) {
 }
 
 function setState(state) {
-  debug('POST /api/' + state + ' ...');
-  fetch('/api/' + state, {method: 'POST'})
+  debug('POST /api/v1/' + state + ' ...');
+  fetch('/api/v1/' + state, {method: 'POST'})
     .then(response => {
       if (!response.ok) {
         response.text().then(text => {
@@ -137,7 +174,7 @@ function setState(state) {
 }
 
 function refresh() {
-  fetch('/api/status')
+  fetch('/api/v1/status')
     .then(r => {
       if (!r.ok) {
         r.text(); // error ignored
@@ -158,6 +195,8 @@ function updateStatus(data) {
   // Set ON/OFF button colors according to D1 status
   const btnOn = document.getElementById('btnOn');
   const btnOff = document.getElementById('btnOff');
+  const btnToggle = document.getElementById('btnToggle');
+  const btnRefresh = document.getElementById('btnRefresh');
   if (data.d1 == 1) {
     btnOn.classList.add('green');
     btnOn.classList.remove('red');
@@ -169,6 +208,11 @@ function updateStatus(data) {
     btnOff.classList.add('green');
     btnOff.classList.remove('red');
   }
+  // Disable ON/OFF/TOGGLE when latch is active
+  const latchActive = data.latch > 0 && data.d1 == 1;
+  btnOn.disabled = latchActive;
+  btnOff.disabled = latchActive;
+  btnToggle.disabled = latchActive;
 }
 
 document.getElementById('latchSeconds').addEventListener('change', function() {
@@ -176,8 +220,8 @@ document.getElementById('latchSeconds').addEventListener('change', function() {
   if (val < 1) val = 1;
   if (val > 3600) val = 3600;
   this.value = val;
-  debug('POST /api/latch ...');
-  fetch('/api/latch', {
+  debug('POST /api/v1/latch ...');
+  fetch('/api/v1/latch', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({latch: val})
@@ -200,8 +244,8 @@ document.getElementById('latchSeconds').addEventListener('change', function() {
 });
 
 refresh();
-// Poll every 2 seconds to keep UI in sync with backend
-setInterval(refresh, 2000);
+// Poll every 200ms to keep UI in sync with backend
+setInterval(refresh, 200);
 // main.js content end
   </script>
   </body>

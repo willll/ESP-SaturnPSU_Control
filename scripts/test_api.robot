@@ -25,23 +25,23 @@ Teardown Suite
 *** Test Cases ***
 Power On And WiFi
     [Tags]    firmware
-    ${resp}=  GET On Session    ${SESSION}    /api/status
+    ${resp}=  GET On Session    ${SESSION}    /api/v1/status
     Should Be Equal As Integers    ${resp.status_code}    200
     Dictionary Should Contain Key    ${resp.json()}    d1
 
 POST On Sets D1 High
     [Tags]    api
-    POST On Session    ${SESSION}    /api/on
+    POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.5s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
+    ${resp}=  GET On Session    ${SESSION}    /api/v1/status
     Should Be Equal As Integers    ${resp.json()['d1']}    1
 
 POST Off Sets D1 Low
     [Tags]    api
     # Reset latch and D1 state
-    POST On Session    ${SESSION}    /api/reset
+    POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
-    ${before}=  GET On Session    ${SESSION}    /api/status
+    ${before}=  GET On Session    ${SESSION}    /api/v1/status
     # Wait for latch to be released
     FOR    ${i}    IN RANGE    20
         ${latch}=    Set Variable    ${before.json()['latch']}
@@ -50,9 +50,9 @@ POST Off Sets D1 Low
         ${before}=  GET On Session    ${SESSION}    /api/status
     END
     # Now turn off
-    POST On Session    ${SESSION}    /api/off
+    POST On Session    ${SESSION}    /api/v1/off
     Sleep    0.5s
-    ${resp}=  GET On Session    ${SESSION}    /api/status
+    ${resp}=  GET On Session    ${SESSION}    /api/v1/status
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 
 POST Toggle Flips D1
@@ -70,9 +70,9 @@ POST Toggle Flips D1
         ${before}=  GET On Session    ${SESSION}    /api/status
     END
     # Now toggle
-    POST On Session    ${SESSION}    /api/toggle
+    POST On Session    ${SESSION}    /api/v1/toggle
     Sleep    0.5s
-    ${after}=  GET On Session    ${SESSION}    /api/status
+    ${after}=  GET On Session    ${SESSION}    /api/v1/status
     Should Not Be Equal    ${after.json()['d1']}    ${prev}
 
 Menu Endpoint Returns Status
@@ -82,8 +82,10 @@ Menu Endpoint Returns Status
 
 Latch ON Reverts After Period
     [Tags]    latch
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=2
-    POST On Session    ${SESSION}    /api/latch    json=${body}
+    POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/off
     Sleep    1.0s
@@ -99,6 +101,8 @@ Latch ON Reverts After Period
 
 Latch Disabled (0) Does Not Revert
     [Tags]    latch
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=0
     ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
@@ -117,6 +121,8 @@ Latch Disabled (0) Does Not Revert
 
 Latch Rejects State Change During Active Period
     [Tags]    latch    enforcement
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
     Sleep    0.5s
@@ -137,6 +143,8 @@ Default Latch Value On Reset
 
 Latch Min/Max Enforced By API
     [Tags]    latch    constraints
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=0
     ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
@@ -147,6 +155,8 @@ Latch Min/Max Enforced By API
 # Edge Cases
 Rapid State Change Requests During Latch
     [Tags]    latch    edge
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=2
     POST On Session    ${SESSION}    /api/latch    json=${body}
     Sleep    0.5s
@@ -166,6 +176,8 @@ Rapid State Change Requests During Latch
 
 Invalid Latch Values Are Handled
     [Tags]    latch    edge    constraints
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=-5
     ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
@@ -175,6 +187,8 @@ Invalid Latch Values Are Handled
 
 Latch Timer Reset On Expiry
     [Tags]    latch    edge
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${body}=    Create Dictionary    latch=1
     POST On Session    ${SESSION}    /api/latch    json=${body}
     Sleep    0.2s

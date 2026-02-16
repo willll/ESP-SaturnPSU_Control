@@ -178,7 +178,7 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 | POST   | /api/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "d1": 0 }`              |
 | POST   | /api/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "d1": 0 }` or `{ "d1": 1 }` |
 | GET    | /api/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
-| POST   | /api/latch     | Set latch period (seconds, 0 disables latch)                     | `{ "latch": 10 }`          |
+| POST   | /api/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
 | GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
 | POST   | /api/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
 
@@ -204,6 +204,7 @@ Response:
 ```json
 {"latch": 10}
 ```
+*Note: Latch period must be between 1 and 3600 seconds. 0 disables latch. See SRS for details.*
 
 ##### Example: /api/reset
 Request:

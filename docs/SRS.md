@@ -1,6 +1,6 @@
 ## Latch Functionality Requirement
 
-- The latch period cannot be disabled. The minimum allowed value for the latch is 1 second. Any attempt to set the latch to 0 or a negative value must result in the latch being set to 1 second.
+- The latch period can be disabled by setting it to 0 (disables auto-revert). The minimum allowed value for the latch (if enabled) is 1 second. Any attempt to set the latch to a negative value or above the maximum must be rejected.
 # Software Requirements Specification (SRS)
 
 ## Project: ESP-SaturnPSU_Control
@@ -33,6 +33,10 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - All interactive elements (buttons, inputs) shall be clearly labeled and accessible.
 - The ON button shall be green if D1 is 1 (ON), and red otherwise.
 - The OFF button shall be red if D1 is 1 (ON), and green otherwise.
+- The TOGGLE button shall always be blue.
+- The REFRESH button shall always be yellow.
+- When the latch is active, the ON, OFF, and TOGGLE buttons shall be disabled.
+- The status refresh interval shall be every 200 milliseconds.
 - The debug log shall always be visible and update in real time.
 - The latch period input shall restrict values to the allowed range (1–3600 seconds).
 - The UI shall provide clear feedback for all user actions and errors.
@@ -87,7 +91,7 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - ESP8266 NodeMCU with relay on D1
 
 #### 4.2 Software Interfaces
-- REST API endpoints: /api/on, /api/off, /api/toggle, /api/status, /api/latch
+- REST API endpoints: /api/v1/on, /api/v1/off, /api/v1/toggle, /api/v1/status, /api/v1/latch, /api/v1/reset
 - Web UI: index.html served from LittleFS
 
 #### 4.3 Communications Interfaces

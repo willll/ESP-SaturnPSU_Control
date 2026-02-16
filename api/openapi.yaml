@@ -7,7 +7,7 @@ info:
 servers:
   - url: http://<device-ip>
 paths:
-  /api/on:
+  /api/v1/on:
     post:
       summary: Set D1 HIGH (ON)
       responses:
@@ -31,7 +31,7 @@ paths:
                   error:
                     type: string
                     example: Latch active
-  /api/off:
+  /api/v1/off:
     post:
       summary: Set D1 LOW (OFF)
       responses:
@@ -55,7 +55,7 @@ paths:
                   error:
                     type: string
                     example: Latch active
-  /api/toggle:
+  /api/v1/toggle:
     post:
       summary: Toggle D1 state
       responses:
@@ -79,7 +79,7 @@ paths:
                   error:
                     type: string
                     example: Latch active
-  /api/status:
+  /api/v1/status:
     get:
       summary: Get current D1 state and latch info
       responses:
@@ -96,7 +96,7 @@ paths:
                   latch:
                     type: integer
                     example: 0
-  /api/latch:
+  /api/v1/latch:
     get:
       summary: Get current latch period (seconds)
       responses:
@@ -133,7 +133,7 @@ paths:
                   latch:
                     type: integer
                     example: 10
-  /api/reset:
+  /api/v1/reset:
     post:
       summary: Clear latch and set D1 LOW (test setup/reset)
       responses:
