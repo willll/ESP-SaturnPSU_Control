@@ -175,7 +175,10 @@ static void handleMenu() {
  */
 static void sendJsonStatus() {
   const char *state = digitalRead(kD1Pin) ? "1" : "0";
-  String payload = String("{\"d1\":") + state + ",\"latch\":" + latchPeriodMs/1000 + "}";
+  bool latchActive = latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
+  String payload = String("{\"d1\":") + state +
+    ",\"latch\":" + latchPeriodMs/1000 +
+    ",\"latch_timer_active\":" + (latchActive ? "true" : "false") + "}";
   server.send(200, "application/json", payload);
 }
 
@@ -243,7 +246,6 @@ static void handleOn() {
     return;
   }
   digitalWrite(kD1Pin, HIGH);
-  // Only start latch timer on ON, not OFF
   latchTimerExpiry = millis() + latchPeriodMs;
   sendJsonStatus();
 }
@@ -259,8 +261,7 @@ static void handleOff() {
     return;
   }
   digitalWrite(kD1Pin, LOW);
-  // Do not start latch timer on OFF; just set LOW
-  latchTimerExpiry = 0;
+  latchTimerExpiry = millis() + latchPeriodMs;
   sendJsonStatus();
 }
 
