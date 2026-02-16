@@ -208,8 +208,8 @@ function updateStatus(data) {
     btnOff.classList.add('green');
     btnOff.classList.remove('red');
   }
-  // Disable ON/OFF/TOGGLE when latch is active
-  const latchActive = data.latch > 0 && data.d1 == 1;
+  // Disable ON/OFF/TOGGLE when latch is active (latchActive = timer running)
+  const latchActive = data.latch_timer_active === true;
   btnOn.disabled = latchActive;
   btnOff.disabled = latchActive;
   btnToggle.disabled = latchActive;
