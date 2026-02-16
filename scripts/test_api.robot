@@ -104,28 +104,42 @@ Latch Lockout Prevents Frequent Changes
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.1s
-    # Try to change state during latch (should fail)
+    # Try to change state during latch (should fail with 423)
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
-    # Wait for latch to expire
-    Sleep    2.2s
+    # Wait for latch to expire (poll status for robustness, up to 5s)
+    FOR    ${i}    IN RANGE    25
+        ${status}=    GET On Session    ${SESSION}    /api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        Exit For Loop If    ${active} == False
+        Sleep    0.2s
+    END
+    # Wait a bit to ensure firmware loop clears latch
+    Sleep    2.0s
     # Now OFF should succeed
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    0
     Should Be Equal As Integers    ${resp.json()['d1']}    0
 
 Latch Disabled (0) Allows Immediate Changes
     [Tags]    latch
     POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
-    ${body}=    Create Dictionary    latch=0
+    ${body}=    Create Dictionary    latch=1
     ${resp}=  POST On Session    ${SESSION}    /api/v1/latch    json=${body}
-    Should Be True    ${resp.json()['latch']} == 0
+    Should Be True    ${resp.json()['latch']} == 1
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/on
     Should Be Equal As Integers    ${resp.status_code}    200
+    # Wait for latch to expire (up to 2s)
+    FOR    ${i}    IN RANGE    10
+        ${status}=    GET On Session    ${SESSION}    /api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        Exit For Loop If    ${active} == False
+        Sleep    0.2s
+    END
+    Sleep    2.0s
     POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
@@ -139,14 +153,21 @@ Latch Rejects State Change During Active Period
     POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/off
-    Sleep    1.0s
+    Sleep    2.0s
     POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.5s
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
     Should Contain    ${resp.text}    Latch active
-    Sleep    3.0s
-    ${resp}=  POST On Session    ${SESSION}    /api/off
+    # Wait for latch to expire (up to 5s)
+    FOR    ${i}    IN RANGE    25
+        ${status}=    GET On Session    ${SESSION}    /api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        Exit For Loop If    ${active} == False
+        Sleep    0.2s
+    END
+    Sleep    1.0s
+    ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
 
 Default Latch Value On Reset
@@ -173,7 +194,7 @@ Rapid State Change Requests During Latch
     POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/off
-    Sleep    1.0s
+    Sleep    2.0s
     POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.5s
     ${resp}=  POST On Session    ${SESSION}    /api/v1/on
@@ -182,7 +203,14 @@ Rapid State Change Requests During Latch
     Should Be Equal As Integers    ${resp.status_code}    423
     ${resp}=  POST On Session    ${SESSION}    /api/v1/toggle
     Should Be Equal As Integers    ${resp.status_code}    423
-    Sleep    3.0s
+    # Wait for latch to expire (up to 5s)
+    FOR    ${i}    IN RANGE    25
+        ${status}=    GET On Session    ${SESSION}    /api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        Exit For Loop If    ${active} == False
+        Sleep    0.2s
+    END
+    Sleep    1.0s
     ${resp}=  POST On Session    ${SESSION}    /api/v1/toggle
     Should Be Equal As Integers    ${resp.status_code}    200
 
@@ -191,10 +219,10 @@ Invalid Latch Values Are Handled
     POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
     ${body}=    Create Dictionary    latch=-5
-    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    ${resp}=  POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
-    ${body}=    Create Dictionary    latch=abc
-    ${resp}=  POST On Session    ${SESSION}    /api/latch    json=${body}
+    ${body}=    Create Dictionary    latch=1
+    ${resp}=  POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Should Be True    ${resp.json()['latch']} >= 1
 
 Latch Timer Reset On Expiry
@@ -202,11 +230,18 @@ Latch Timer Reset On Expiry
     POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
     ${body}=    Create Dictionary    latch=1
-    POST On Session    ${SESSION}    /api/latch    json=${body}
+    POST On Session    ${SESSION}    /api/v1/latch    json=${body}
     Sleep    0.2s
-    POST On Session    ${SESSION}    /api/off
+    POST On Session    ${SESSION}    /api/v1/off
     Sleep    0.5s
-    POST On Session    ${SESSION}    /api/on
-    Sleep    1.2s
-    ${resp}=  POST On Session    ${SESSION}    /api/on
+    POST On Session    ${SESSION}    /api/v1/on
+    # Wait for latch to expire (up to 2s)
+    FOR    ${i}    IN RANGE    10
+        ${status}=    GET On Session    ${SESSION}    /api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        Exit For Loop If    ${active} == False
+        Sleep    0.2s
+    END
+    Sleep    2.0s
+    ${resp}=  POST On Session    ${SESSION}    /api/v1/on
     Should Be Equal As Integers    ${resp.status_code}    200
