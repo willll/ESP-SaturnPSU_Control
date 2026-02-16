@@ -161,9 +161,6 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 ![Web UI Screenshot 1](docs/screenshot1.png)
 *Main control panel with ON/OFF/TOGGLE, latch input, and debug log.*
 
-![Web UI Screenshot 2](docs/screenshot2.png)
-*Debug log area showing API errors and actions.*
-
 > **Tip:** If you see 'Status: ERROR' or debug messages about API failures, check your device connection and network.
 
 ## REST API
