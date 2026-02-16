@@ -1,3 +1,4 @@
+
 /**
  * @file main.cpp
  * @brief ESP8266 D1 Control Firmware
@@ -10,6 +11,10 @@
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+
+// Test mode: If true, after latch expiry, return HTTP 202 until main loop clears latch.
+// Enabled by presence of /test_mode file in LittleFS.
+static bool testMode = false;
 
 /**
  * GPIO pin for relay/relay control (D1)
@@ -31,6 +36,14 @@ static String lastWifiError;
  */
 static uint32_t latchPeriodMs = 5000; // Default: 5 seconds
 static uint32_t latchTimerExpiry = 0;
+
+/**
+ * @brief Helper: Returns true if latch timer has expired but main loop has not yet cleared the latch.
+ * Used in test mode to signal a race window for robust test automation.
+ */
+static bool isLatchExpiredButNotCleared() {
+  return latchTimerExpiry > 0 && ((int32_t)(millis() - latchTimerExpiry) >= 0);
+}
 
 /**
  * @struct WifiConfig
@@ -174,6 +187,7 @@ static void handleMenu() {
  * @endpoint /api/v1/status (GET)
  */
 static void sendJsonStatus() {
+  // Compose status JSON with D1 state, latch period, and timer info
   const char *state = digitalRead(kD1Pin) ? "1" : "0";
   bool latchActive = latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
   String payload = String("{\"d1\":") + state +
@@ -190,11 +204,13 @@ static void sendJsonStatus() {
  * @endpoint /api/v1/latch (GET, POST)
  */
 static void handleLatch() {
+  // GET: Return current latch period (seconds)
   if (server.method() == HTTP_GET) {
     String payload = String("{\"latch\":") + (latchPeriodMs/1000) + "}";
     server.send(200, "application/json", payload);
     return;
   }
+  // POST: Set new latch period (seconds, clamped 1-3600)
   if (server.method() == HTTP_POST) {
     if (!server.hasArg("plain")) {
       server.send(400, "application/json", "{\"error\":\"Missing body\"}");
@@ -207,7 +223,6 @@ static void handleLatch() {
       return;
     }
     int seconds = doc["latch"] | 0;
-    // Clamp to [1, 3600] (cannot disable)
     if (seconds < 1) seconds = 1;
     if (seconds > 3600) seconds = 3600;
     latchPeriodMs = seconds * 1000;
@@ -239,22 +254,22 @@ static void handleIndex() {
  * @endpoint /api/v1/on (POST)
  */
 static bool isLatchActive() {
+  // Returns true if latch timer is active (not expired)
   return latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
 }
 
 static void handleOn() {
+  // POST /api/v1/on: Set D1 HIGH and start latch timer
   if (isLatchActive()) {
-    Serial.println("handleOn: Latch active, rejecting ON");
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
-  Serial.print("handleOn: Setting D1 HIGH, latch for ");
-  Serial.print(latchPeriodMs);
-  Serial.println(" ms");
+  if (testMode && isLatchExpiredButNotCleared()) {
+    server.send(202, "application/json", "{\"info\":\"Latch expired, wait for clear\"}");
+    return;
+  }
   digitalWrite(kD1Pin, HIGH);
   latchTimerExpiry = millis() + latchPeriodMs;
-  Serial.print("handleOn: latchTimerExpiry set to ");
-  Serial.println(latchTimerExpiry);
   sendJsonStatus();
 }
 
@@ -264,18 +279,17 @@ static void handleOn() {
  * @endpoint /api/v1/off (POST)
  */
 static void handleOff() {
+  // POST /api/v1/off: Set D1 LOW and start latch timer
   if (isLatchActive()) {
-    Serial.println("handleOff: Latch active, rejecting OFF");
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
-  Serial.print("handleOff: Setting D1 LOW, latch for ");
-  Serial.print(latchPeriodMs);
-  Serial.println(" ms");
+  if (testMode && isLatchExpiredButNotCleared()) {
+    server.send(202, "application/json", "{\"info\":\"Latch expired, wait for clear\"}");
+    return;
+  }
   digitalWrite(kD1Pin, LOW);
   latchTimerExpiry = millis() + latchPeriodMs;
-  Serial.print("handleOff: latchTimerExpiry set to ");
-  Serial.println(latchTimerExpiry);
   sendJsonStatus();
 }
 
@@ -290,17 +304,24 @@ static void handleOff() {
  * @endpoint /api/v1/toggle (POST)
  */
 static void handleToggle() {
+  // POST /api/v1/toggle: Toggle D1 state and update latch timer
   if (isLatchActive()) {
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
+  if (testMode && isLatchExpiredButNotCleared()) {
+    server.send(202, "application/json", "{\"info\":\"Latch expired, wait for clear\"}");
+    return;
+  }
+  // Enable test mode if /test_mode file exists
+  if (LittleFS.begin() && LittleFS.exists("/test_mode")) {
+    testMode = true;
+  }
   int current = digitalRead(kD1Pin);
   if (current == LOW) {
-    // Use ON logic
     digitalWrite(kD1Pin, HIGH);
     latchTimerExpiry = millis() + latchPeriodMs;
   } else {
-    // Use OFF logic
     digitalWrite(kD1Pin, LOW);
     latchTimerExpiry = 0;
   }
@@ -376,12 +397,10 @@ void setup() {
 
   // Expose /api/v1/reset endpoint for test setup (clears latch and sets D1 LOW)
   server.on("/api/v1/reset", HTTP_POST, []() {
-    Serial.println("/api/v1/reset called: clearing latch and setting D1 LOW");
+    // POST /api/v1/reset: Clear latch and set D1 LOW (for test setup)
     latchTimerExpiry = 0;
     digitalWrite(kD1Pin, LOW);
-    Serial.println("/api/v1/reset: D1 set LOW, latch cleared");
     server.send(200, "application/json", "{\"reset\":true}");
-    Serial.println("/api/v1/reset: response sent");
   });
 
   server.begin();
