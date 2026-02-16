@@ -36,8 +36,12 @@ sleep $INITIAL_MONITOR_DELAY
 
 # Attempt automatic reset using DTR/RTS (if supported)
 echo "Attempting automatic reset via DTR/RTS..."
-stty -F /dev/ttyUSB0 hupcl || true
-sleep 1
+if [ -n "$UPLOAD_PORT" ] && [ -e "$UPLOAD_PORT" ]; then
+	stty -F "$UPLOAD_PORT" hupcl || true
+	sleep 1
+else
+	echo "No serial port found for stty reset. Skipping."
+fi
 
 # Try to start serial monitor, retry if port is busy
 MAX_RETRIES=5
