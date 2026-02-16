@@ -104,6 +104,11 @@ Latch Lockout Prevents Frequent Changes
     Sleep    0.5s
     POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.1s
+    # Ensure latch is active before forbidden state change
+    ${status}=    GET On Session    ${SESSION}    /api/v1/status
+    ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+    Run Keyword Unless    ${active}    Fail    Latch should be active before forbidden state change
+    Log    Latch is active, attempting forbidden state change
     # Try to change state during latch (should fail with 423)
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
@@ -116,6 +121,8 @@ Latch Lockout Prevents Frequent Changes
         Exit For Loop If    ${active} == False and ${now} > ${expiry}
         Sleep    0.1s
     END
+    # Extra delay to ensure firmware main loop clears latch
+    Sleep    0.3s
     # Now OFF should succeed
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
