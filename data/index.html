@@ -210,8 +210,10 @@ function updateStatus(data) {
   }
   // Disable ON/OFF/TOGGLE when latch is active (latchActive = timer running)
   const latchActive = data.latch_timer_active === true;
-  btnOn.disabled = latchActive;
-  btnOff.disabled = latchActive;
+  // ON button disabled if D1 is ON or latch is active
+  btnOn.disabled = (data.d1 == 1) || latchActive;
+  // OFF button disabled if D1 is OFF or latch is active
+  btnOff.disabled = (data.d1 == 0) || latchActive;
   btnToggle.disabled = latchActive;
 }
 

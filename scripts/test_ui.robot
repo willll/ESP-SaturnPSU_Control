@@ -17,6 +17,8 @@ ON Button Green When D1 Is 1
     Reload Page
     Element Attribute Value Should Be    id=btnOn    class    btn-on green
     Element Attribute Value Should Be    id=btnOff   class    btn-off red
+    Element Should Be Disabled    id=btnOn
+    Element Should Be Enabled     id=btnOff
 
 OFF Button Green When D1 Is 0
     [Tags]    color    status
@@ -24,6 +26,8 @@ OFF Button Green When D1 Is 0
     Reload Page
     Element Attribute Value Should Be    id=btnOn    class    btn-on red
     Element Attribute Value Should Be    id=btnOff   class    btn-off green
+    Element Should Be Disabled    id=btnOff
+    Element Should Be Enabled     id=btnOn
 
 Latch Input Enforces Min/Max
     [Tags]    latch    input
