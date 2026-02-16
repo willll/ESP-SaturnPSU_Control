@@ -47,6 +47,14 @@ POST Toggle Flips D1
     [Tags]    api
     ${before}=  GET On Session    ${SESSION}    /api/status
     ${prev}=    Set Variable    ${before.json()['d1']}
+    # Wait for latch to be released
+    FOR    ${i}    IN RANGE    20
+        ${latch}=    Set Variable    ${before.json()['latch']}
+        Exit For Loop If    ${latch} == 0 or ${latch} == None
+        Sleep    0.5s
+        ${before}=  GET On Session    ${SESSION}    /api/status
+    END
+    # Now toggle
     POST On Session    ${SESSION}    /api/toggle
     Sleep    0.5s
     ${after}=  GET On Session    ${SESSION}    /api/status
