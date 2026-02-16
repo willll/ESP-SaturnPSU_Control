@@ -1,5 +1,6 @@
 *** Settings ***
 Library           SeleniumLibrary
+Library           RequestsLibrary
 Suite Setup       Open Browser To D1 UI
 Suite Teardown    Close Browser
 
@@ -63,7 +64,7 @@ API Error Handling And Feedback
     Press Key    id=latchSeconds    RETURN
     Sleep    0.5s
     # Attempt to set D1 OFF during latch
-    ${resp}=    Post Request    d1    ${URL}api/v1/off
+    ${resp}=    POST On Session    d1    api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
     # UI should show error feedback (assume error log or popup)
     Element Should Be Visible    id=debug
@@ -72,7 +73,7 @@ API Error Handling And Feedback
 Invalid API Request Shows Error
     [Tags]    error    ui
     # Send invalid API request
-    ${resp}=    Post Request    d1    ${URL}api/v1/latch    data={'latch': -5}
+    ${resp}=    POST On Session    d1    api/v1/latch    json={'latch': -5}
     Should Be Equal As Integers    ${resp.status_code}    200
     # UI should show error or warning for invalid value
     Element Should Be Visible    id=debug
@@ -80,15 +81,16 @@ Invalid API Request Shows Error
 
 UI Is Self-Contained
     [Tags]    selfcontained    ui
-    # Verify all resources are loaded from local device
-    ${caps}=    Evaluate    {'browserName': 'chrome', 'goog:chromeOptions': {'args': ['--no-sandbox', '--disable-dev-shm-usage']}}
-    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    desired_capabilities=${caps}
+    ${chrome options}=    Evaluate    sys.modules['selenium.webdriver'].ChromeOptions()    sys, selenium.webdriver
+    Call Method    ${chrome options}    add_argument    --no-sandbox
+    Call Method    ${chrome options}    add_argument    --disable-dev-shm-usage
+    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    options=${chrome options}
+    Maximize Browser Window
+    Create Session    d1    ${URL}
     ${resources}=    Get WebElements    //link | //script | //img
     : FOR    ${el}    IN    @{resources}
     \    ${src}=    Get Element Attribute    ${el}    src
     \    Run Keyword If    '${src}' != ''    Should Contain    ${src}    ${URL}
-    # No external resources should be referenced
-    # Close browser
     Close Browser
 
 Open Source And Documentation Present
@@ -103,14 +105,17 @@ Open Source And Documentation Present
 
 *** Keywords ***
 Open Browser To D1 UI
-    ${caps}=    Evaluate    {'browserName': 'chrome', 'goog:chromeOptions': {'args': ['--no-sandbox', '--disable-dev-shm-usage']}}
-    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    desired_capabilities=${caps}
+    ${chrome options}=    Evaluate    sys.modules['selenium.webdriver'].ChromeOptions()    sys, selenium.webdriver
+    Call Method    ${chrome options}    add_argument    --no-sandbox
+    Call Method    ${chrome options}    add_argument    --disable-dev-shm-usage
+    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    options=${chrome options}
     Maximize Browser Window
+    Create Session    d1    ${URL}
 
 Set D1 State
     [Arguments]    ${state}
     # Use API to set D1 state directly
-    ${resp}=    Post Request    d1    ${URL}api/${state == '1' and 'on' or 'off'}
+    ${resp}=    POST On Session    d1    api/v1/${state == '1' and 'on' or 'off'}
     Should Be Equal As Integers    ${resp.status_code}    200
 
 Reload Page
