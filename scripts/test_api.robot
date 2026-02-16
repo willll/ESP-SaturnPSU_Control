@@ -38,6 +38,18 @@ POST On Sets D1 High
 
 POST Off Sets D1 Low
     [Tags]    api
+    # Reset latch and D1 state
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
+    ${before}=  GET On Session    ${SESSION}    /api/status
+    # Wait for latch to be released
+    FOR    ${i}    IN RANGE    20
+        ${latch}=    Set Variable    ${before.json()['latch']}
+        Exit For Loop If    ${latch} == 0 or ${latch} == None
+        Sleep    0.5s
+        ${before}=  GET On Session    ${SESSION}    /api/status
+    END
+    # Now turn off
     POST On Session    ${SESSION}    /api/off
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/status
@@ -45,6 +57,9 @@ POST Off Sets D1 Low
 
 POST Toggle Flips D1
     [Tags]    api
+    # Reset latch and D1 state
+    POST On Session    ${SESSION}    /api/reset
+    Sleep    0.5s
     ${before}=  GET On Session    ${SESSION}    /api/status
     ${prev}=    Set Variable    ${before.json()['d1']}
     # Wait for latch to be released
