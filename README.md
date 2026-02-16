@@ -167,16 +167,52 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 > **Tip:** If you see 'Status: ERROR' or debug messages about API failures, check your device connection and network.
 
 ## REST API
-- POST /api/on
-- POST /api/off
-- POST /api/toggle
-- GET /api/status
-- GET /menu (plain-text status menu)
 
-Example response from /api/status:
+### REST API Endpoints
 
+| Method | Path           | Description                                                      | Example Response           |
+|--------|----------------|------------------------------------------------------------------|----------------------------|
+| GET    | /              | Web UI (HTML page)                                               | (HTML)                     |
+| GET    | /api/status    | Get current D1 state and latch info                              | `{ "d1": 1, "latch": 0 }` |
+| POST   | /api/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "d1": 1 }`              |
+| POST   | /api/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "d1": 0 }`              |
+| POST   | /api/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "d1": 0 }` or `{ "d1": 1 }` |
+| GET    | /api/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
+| POST   | /api/latch     | Set latch period (seconds, 0 disables latch)                     | `{ "latch": 10 }`          |
+| GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
+| POST   | /api/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
+
+#### Details
+
+- **/api/on, /api/off, /api/toggle**: All return the new D1 state as JSON. If latch is active, state changes may be rejected with `{ "error": "Latch active" }` and HTTP 423.
+- **/api/latch**: GET returns current latch period; POST sets a new period (0 disables latch). Returns new value as JSON.
+- **/api/reset**: For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
+- **/api/status**: Returns current D1 state and latch timer (if active).
+- **/menu**: Returns a plain-text status summary for CLI/legacy use.
+
+##### Example: /api/status
 ```json
-{"d1":1}
+{"d1":1, "latch":0}
+```
+
+##### Example: /api/latch (POST)
+Request:
+```json
+{"latch": 10}
+```
+Response:
+```json
+{"latch": 10}
+```
+
+##### Example: /api/reset
+Request:
+```bash
+curl -X POST http://<device-ip>/api/reset
+```
+Response:
+```json
+{"reset":true}
 ```
 
 

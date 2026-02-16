@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: ESP8266 D1 HTTP Control API
+  version: 1.0.0
+  description: |
+    REST API for controlling the D1 (GPIO5) pin on an ESP8266 NodeMCU. Includes endpoints for ON/OFF/TOGGLE, latch timer, status, and test/reset.
+servers:
+  - url: http://<device-ip>
+paths:
+  /api/on:
+    post:
+      summary: Set D1 HIGH (ON)
+      responses:
+        '200':
+          description: D1 set HIGH
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  d1:
+                    type: integer
+                    example: 1
+        '423':
+          description: Latch active, cannot change state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Latch active
+  /api/off:
+    post:
+      summary: Set D1 LOW (OFF)
+      responses:
+        '200':
+          description: D1 set LOW
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  d1:
+                    type: integer
+                    example: 0
+        '423':
+          description: Latch active, cannot change state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Latch active
+  /api/toggle:
+    post:
+      summary: Toggle D1 state
+      responses:
+        '200':
+          description: D1 toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  d1:
+                    type: integer
+                    example: 1
+        '423':
+          description: Latch active, cannot change state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Latch active
+  /api/status:
+    get:
+      summary: Get current D1 state and latch info
+      responses:
+        '200':
+          description: Status info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  d1:
+                    type: integer
+                    example: 1
+                  latch:
+                    type: integer
+                    example: 0
+  /api/latch:
+    get:
+      summary: Get current latch period (seconds)
+      responses:
+        '200':
+          description: Latch period
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latch:
+                    type: integer
+                    example: 5
+    post:
+      summary: Set latch period (seconds, 0 disables latch)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latch:
+                  type: integer
+                  example: 10
+      responses:
+        '200':
+          description: Latch period set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latch:
+                    type: integer
+                    example: 10
+  /api/reset:
+    post:
+      summary: Clear latch and set D1 LOW (test setup/reset)
+      responses:
+        '200':
+          description: Reset performed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reset:
+                    type: boolean
+                    example: true
+  /menu:
+    get:
+      summary: Plain-text status menu (for CLI/legacy use)
+      responses:
+        '200':
+          description: Plain-text status
+          content:
+            text/plain:
+              schema:
+                type: string
+  /:
+    get:
+      summary: Web UI (HTML page)
+      responses:
+        '200':
+          description: Web UI HTML
+          content:
+            text/html:
+              schema:
+                type: string
