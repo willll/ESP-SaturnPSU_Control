@@ -171,21 +171,23 @@ static void handleMenu() {
 // Send current D1 state and latch period as JSON
 /**
  * @brief Send current D1 state and latch period as JSON
- * @endpoint /api/status (GET)
+ * @endpoint /api/v1/status (GET)
  */
 static void sendJsonStatus() {
   const char *state = digitalRead(kD1Pin) ? "1" : "0";
   bool latchActive = latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
   String payload = String("{\"d1\":") + state +
     ",\"latch\":" + latchPeriodMs/1000 +
-    ",\"latch_timer_active\":" + (latchActive ? "true" : "false") + "}";
+    ",\"latch_timer_active\":" + (latchActive ? "true" : "false") +
+    ",\"latch_timer_expiry\":" + latchTimerExpiry +
+    ",\"millis\":" + millis() + "}";
   server.send(200, "application/json", payload);
 }
 
 // GET returns {"latch": seconds}, POST sets latch period (seconds)
 /**
- * Handle /api/latch GET/POST: get or set latch period
- * @endpoint /api/latch (GET, POST)
+ * Handle /api/v1/latch GET/POST: get or set latch period
+ * @endpoint /api/v1/latch (GET, POST)
  */
 static void handleLatch() {
   if (server.method() == HTTP_GET) {
@@ -231,10 +233,10 @@ static void handleIndex() {
 
 
 
-// Handle /api/on: set D1 HIGH, start latch timer
+// Handle /api/v1/on: set D1 HIGH, start latch timer
 /**
- * @brief Handle /api/on: set D1 HIGH, start latch timer
- * @endpoint /api/on (POST)
+ * @brief Handle /api/v1/on: set D1 HIGH, start latch timer
+ * @endpoint /api/v1/on (POST)
  */
 static bool isLatchActive() {
   return latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
@@ -242,38 +244,50 @@ static bool isLatchActive() {
 
 static void handleOn() {
   if (isLatchActive()) {
+    Serial.println("handleOn: Latch active, rejecting ON");
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
+  Serial.print("handleOn: Setting D1 HIGH, latch for ");
+  Serial.print(latchPeriodMs);
+  Serial.println(" ms");
   digitalWrite(kD1Pin, HIGH);
   latchTimerExpiry = millis() + latchPeriodMs;
+  Serial.print("handleOn: latchTimerExpiry set to ");
+  Serial.println(latchTimerExpiry);
   sendJsonStatus();
 }
 
-// Handle /api/off: set D1 LOW, start latch timer
+// Handle /api/v1/off: set D1 LOW, start latch timer
 /**
- * @brief Handle /api/off: set D1 LOW, start latch timer
- * @endpoint /api/off (POST)
+ * @brief Handle /api/v1/off: set D1 LOW, start latch timer
+ * @endpoint /api/v1/off (POST)
  */
 static void handleOff() {
   if (isLatchActive()) {
+    Serial.println("handleOff: Latch active, rejecting OFF");
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
   }
+  Serial.print("handleOff: Setting D1 LOW, latch for ");
+  Serial.print(latchPeriodMs);
+  Serial.println(" ms");
   digitalWrite(kD1Pin, LOW);
   latchTimerExpiry = millis() + latchPeriodMs;
+  Serial.print("handleOff: latchTimerExpiry set to ");
+  Serial.println(latchTimerExpiry);
   sendJsonStatus();
 }
 
-// Handle /api/toggle: toggle D1, start latch timer
+// Handle /api/v1/toggle: toggle D1, start latch timer
 /**
- * @brief Handle /api/toggle: toggle D1, start latch timer
- * @endpoint /api/toggle (POST)
+ * @brief Handle /api/v1/toggle: toggle D1, start latch timer
+ * @endpoint /api/v1/toggle (POST)
  */
-// Handle /api/toggle: toggle D1, using ON/OFF logic and latch respect
+// Handle /api/v1/toggle: toggle D1, using ON/OFF logic and latch respect
 /**
- * @brief Handle /api/toggle: toggle D1, using ON/OFF logic and latch respect
- * @endpoint /api/toggle (POST)
+ * @brief Handle /api/v1/toggle: toggle D1, using ON/OFF logic and latch respect
+ * @endpoint /api/v1/toggle (POST)
  */
 static void handleToggle() {
   if (isLatchActive()) {
@@ -362,9 +376,12 @@ void setup() {
 
   // Expose /api/v1/reset endpoint for test setup (clears latch and sets D1 LOW)
   server.on("/api/v1/reset", HTTP_POST, []() {
+    Serial.println("/api/v1/reset called: clearing latch and setting D1 LOW");
     latchTimerExpiry = 0;
     digitalWrite(kD1Pin, LOW);
+    Serial.println("/api/v1/reset: D1 set LOW, latch cleared");
     server.send(200, "application/json", "{\"reset\":true}");
+    Serial.println("/api/v1/reset: response sent");
   });
 
   server.begin();
@@ -379,6 +396,10 @@ void loop() {
   server.handleClient();
   // Latch timer logic: after expiry, allow state changes again, but do not auto-revert relay state
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
+    Serial.print("loop: Latch expired at millis=");
+    Serial.print(millis());
+    Serial.print(", latchTimerExpiry was ");
+    Serial.println(latchTimerExpiry);
     latchTimerExpiry = 0;
   }
 
