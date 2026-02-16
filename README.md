@@ -170,29 +170,29 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 | Method | Path           | Description                                                      | Example Response           |
 |--------|----------------|------------------------------------------------------------------|----------------------------|
 | GET    | /              | Web UI (HTML page)                                               | (HTML)                     |
-| GET    | /api/status    | Get current D1 state and latch info                              | `{ "d1": 1, "latch": 0 }` |
-| POST   | /api/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "d1": 1 }`              |
-| POST   | /api/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "d1": 0 }`              |
-| POST   | /api/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "d1": 0 }` or `{ "d1": 1 }` |
-| GET    | /api/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
-| POST   | /api/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
+| GET    | /api/v1/status    | Get current D1 state and latch info                              | `{ "d1": 1, "latch": 0 }` |
+| POST   | /api/v1/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "d1": 1 }`              |
+| POST   | /api/v1/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "d1": 0 }`              |
+| POST   | /api/v1/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "d1": 0 }` or `{ "d1": 1 }` |
+| GET    | /api/v1/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
+| POST   | /api/v1/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
 | GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
 | POST   | /api/v1/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
 
 #### Details
 
-- **/api/on, /api/off, /api/toggle**: All return the new D1 state as JSON. If latch is active, state changes may be rejected with `{ "error": "Latch active" }` and HTTP 423.
-- **/api/latch**: GET returns current latch period; POST sets a new period (0 disables latch). Returns new value as JSON.
+- **/api/v1/on, /api/v1/off, /api/v1/toggle**: All return the new D1 state as JSON. If latch is active, state changes may be rejected with `{ "error": "Latch active" }` and HTTP 423.
+- **/api/v1/latch**: GET returns current latch period; POST sets a new period (0 disables latch). Returns new value as JSON.
 - **/api/v1/reset**: For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
-- **/api/status**: Returns current D1 state and latch timer (if active).
+- **/api/v1/status**: Returns current D1 state and latch timer (if active).
 - **/menu**: Returns a plain-text status summary for CLI/legacy use.
 
-##### Example: /api/status
+##### Example: /api/v1/status
 ```json
 {"d1":1, "latch":0}
 ```
 
-##### Example: /api/latch (POST)
+##### Example: /api/v1/latch (POST)
 Request:
 ```json
 {"latch": 10}
