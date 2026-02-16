@@ -6,7 +6,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Robot Framework and required libraries
-RUN pip install --no-cache-dir robotframework robotframework-requests robotframework-seleniumlibrary
+RUN pip install --no-cache-dir robotframework robotframework-requests robotframework-seleniumlibrary selenium
 
 WORKDIR /tests
 
