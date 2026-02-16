@@ -4,7 +4,10 @@ Suite Setup       Open Browser To D1 UI
 Suite Teardown    Close Browser
 
 *** Variables ***
-${URL}            http://localhost/   # Change to your ESP8266 address
+${URL}            http://192.168.1.107/   # ESP8266 device address
+${SELENIUM_REMOTE_URL}    %{SELENIUM_REMOTE_URL}
+${CHROME OPTIONS}    {"args": ["--no-sandbox", "--disable-dev-shm-usage"]}
+${CHROME CAPABILITIES}    {"browserName": "chrome", "goog:chromeOptions": {"args": ["--no-sandbox", "--disable-dev-shm-usage"]}}
 
 *** Test Cases ***
 ON Button Green When D1 Is 1
@@ -78,7 +81,8 @@ Invalid API Request Shows Error
 UI Is Self-Contained
     [Tags]    selfcontained    ui
     # Verify all resources are loaded from local device
-    Open Browser    ${URL}    Chrome
+    ${caps}=    Evaluate    {'browserName': 'chrome', 'goog:chromeOptions': {'args': ['--no-sandbox', '--disable-dev-shm-usage']}}
+    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    desired_capabilities=${caps}
     ${resources}=    Get WebElements    //link | //script | //img
     : FOR    ${el}    IN    @{resources}
     \    ${src}=    Get Element Attribute    ${el}    src
@@ -99,7 +103,8 @@ Open Source And Documentation Present
 
 *** Keywords ***
 Open Browser To D1 UI
-    Open Browser    ${URL}    Chrome
+    ${caps}=    Evaluate    {'browserName': 'chrome', 'goog:chromeOptions': {'args': ['--no-sandbox', '--disable-dev-shm-usage']}}
+    Open Browser    ${URL}    browser=chrome    remote_url=${SELENIUM_REMOTE_URL}    desired_capabilities=${caps}
     Maximize Browser Window
 
 Set D1 State
