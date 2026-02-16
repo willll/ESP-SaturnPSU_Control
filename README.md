@@ -177,13 +177,13 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 | GET    | /api/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
 | POST   | /api/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
 | GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
-| POST   | /api/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
+| POST   | /api/v1/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
 
 #### Details
 
 - **/api/on, /api/off, /api/toggle**: All return the new D1 state as JSON. If latch is active, state changes may be rejected with `{ "error": "Latch active" }` and HTTP 423.
 - **/api/latch**: GET returns current latch period; POST sets a new period (0 disables latch). Returns new value as JSON.
-- **/api/reset**: For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
+- **/api/v1/reset**: For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
 - **/api/status**: Returns current D1 state and latch timer (if active).
 - **/menu**: Returns a plain-text status summary for CLI/legacy use.
 
@@ -203,10 +203,10 @@ Response:
 ```
 *Note: Latch period must be between 1 and 3600 seconds. 0 disables latch. See SRS for details.*
 
-##### Example: /api/reset
+##### Example: /api/v1/reset
 Request:
 ```bash
-curl -X POST http://<device-ip>/api/reset
+curl -X POST http://<device-ip>/api/v1/reset
 ```
 Response:
 ```json
