@@ -60,7 +60,7 @@ API Error Handling And Feedback
     Press Key    id=latchSeconds    RETURN
     Sleep    0.5s
     # Attempt to set D1 OFF during latch
-    ${resp}=    Post Request    d1    ${URL}api/off
+    ${resp}=    Post Request    d1    ${URL}api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    423
     # UI should show error feedback (assume error log or popup)
     Element Should Be Visible    id=debug
@@ -69,7 +69,7 @@ API Error Handling And Feedback
 Invalid API Request Shows Error
     [Tags]    error    ui
     # Send invalid API request
-    ${resp}=    Post Request    d1    ${URL}api/latch    data={'latch': -5}
+    ${resp}=    Post Request    d1    ${URL}api/v1/latch    data={'latch': -5}
     Should Be Equal As Integers    ${resp.status_code}    200
     # UI should show error or warning for invalid value
     Element Should Be Visible    id=debug
