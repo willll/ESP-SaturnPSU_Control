@@ -9,10 +9,10 @@ This document describes the recommended test campaign for the ESP8266 D1 Control
 - [ ] Handles missing or invalid wifi.json gracefully (error message on serial)
 
 ### 1.2. REST API Endpoints
-- [ ] `POST /api/on` sets D1 pin HIGH, returns success
-- [ ] `POST /api/off` sets D1 pin LOW, returns success
-- [ ] `POST /api/toggle` toggles D1 pin, returns new state
-- [ ] `GET /api/status` returns current D1 state as JSON
+- [ ] `POST /api/v1/on` sets D1 pin HIGH, returns success
+- [ ] `POST /api/v1/off` sets D1 pin LOW, returns success
+- [ ] `POST /api/v1/toggle` toggles D1 pin, returns new state
+- [ ] `GET /api/v1/status` returns current D1 state as JSON
 - [ ] `GET /menu` returns plain-text status
 - [ ] All endpoints handle errors (invalid method, malformed request)
 - [ ] `POST /api/v1/reset` clears latch and sets D1 LOW for test setup
