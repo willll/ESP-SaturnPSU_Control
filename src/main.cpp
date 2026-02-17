@@ -259,7 +259,13 @@ static bool isLatchActive() {
 }
 
 static void handleOn() {
+    Serial.print("[API] POST /api/v1/on at millis=");
+    Serial.println(millis());
   // POST /api/v1/on: Set D1 HIGH and start latch timer
+  // Clear latch if expired (fix race with main loop)
+  if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
+    latchTimerExpiry = 0;
+  }
   if (isLatchActive()) {
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
@@ -279,7 +285,13 @@ static void handleOn() {
  * @endpoint /api/v1/off (POST)
  */
 static void handleOff() {
+    Serial.print("[API] POST /api/v1/off at millis=");
+    Serial.println(millis());
   // POST /api/v1/off: Set D1 LOW and start latch timer
+  // Clear latch if expired (fix race with main loop)
+  if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
+    latchTimerExpiry = 0;
+  }
   if (isLatchActive()) {
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
@@ -304,7 +316,13 @@ static void handleOff() {
  * @endpoint /api/v1/toggle (POST)
  */
 static void handleToggle() {
+    Serial.print("[API] POST /api/v1/toggle at millis=");
+    Serial.println(millis());
   // POST /api/v1/toggle: Toggle D1 state and update latch timer
+  // Clear latch if expired (fix race with main loop)
+  if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
+    latchTimerExpiry = 0;
+  }
   if (isLatchActive()) {
     server.send(423, "application/json", "{\"error\":\"Latch active\"}");
     return;
@@ -412,6 +430,12 @@ void setup() {
  * @brief Arduino main loop: handle HTTP requests and latch timer
  */
 void loop() {
+    static uint32_t lastLoopPrint = 0;
+    if (millis() - lastLoopPrint > 1000) {
+      Serial.print("[LOOP] millis=");
+      Serial.println(millis());
+      lastLoopPrint = millis();
+    }
   server.handleClient();
   // Latch timer logic: after expiry, allow state changes again, but do not auto-revert relay state
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
