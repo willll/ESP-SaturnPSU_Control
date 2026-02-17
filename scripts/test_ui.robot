@@ -2,7 +2,26 @@
 Library           SeleniumLibrary
 Library           RequestsLibrary
 Suite Setup       Open Browser To D1 UI
+Test Setup        Reset Device State
 Suite Teardown    Close Browser
+*** Keywords ***
+Wait For Latch Expiry
+    # Poll /api/v1/status until latch_timer_active is false
+    FOR    ${i}    IN RANGE    50
+        ${status}=    GET On Session    d1    api/v1/status
+        ${active}=    Set Variable    ${status.json()['latch_timer_active']}
+        ${expiry}=    Set Variable    ${status.json()['latch_timer_expiry']}
+        ${now}=    Set Variable    ${status.json()['millis']}
+        Exit For Loop If    ${active} == False and ${now} > ${expiry}
+        Sleep    0.1s
+    END
+    Sleep    0.2s    # Extra delay to ensure firmware clears latch
+
+Reset Device State
+    # POST /api/v1/reset to clear latch and set D1 LOW before each test
+    ${resp}=    POST On Session    d1    api/v1/reset
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Wait For Latch Expiry
 
 *** Variables ***
 ${URL}            http://192.168.1.107/   # ESP8266 device address
@@ -116,8 +135,10 @@ Open Browser To D1 UI
     Maximize Browser Window
     Create Session    d1    ${URL}
 
+
 Set D1 State
     [Arguments]    ${state}
+    Wait For Latch Expiry
     # Use API to set D1 state directly
     ${resp}=    POST On Session    d1    api/v1/${state == '1' and 'on' or 'off'}
     Should Be Equal As Integers    ${resp.status_code}    200
