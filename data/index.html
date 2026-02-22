@@ -60,10 +60,7 @@ button {
 .btn-toggle {
   background: #1976d2 !important; /* blue */
 }
-.btn-refresh {
-  background: #ffd600 !important; /* yellow */
-  color: #222 !important;
-}
+/* ...existing code... */
 button:disabled, .btn-on:disabled, .btn-off:disabled, .btn-toggle:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -129,10 +126,10 @@ input[type="number"] {
       <button class="btn-on" id="btnOn" onclick="setState('on')">On</button>
       <button class="btn-off" id="btnOff" onclick="setState('off')">Off</button>
       <button class="btn-toggle" id="btnToggle" onclick="setState('toggle')">Toggle</button>
-      <button class="btn-refresh" id="btnRefresh" onclick="refresh()">Refresh</button>
+      <!-- Refresh button removed -->
     </div>
     <div class="field">
-      <label for="latchSeconds">Latch period (seconds)</label>
+        <label for="latchSeconds">Latch period (seconds)</label>
       <input id="latchSeconds" type="number" min="1" max="3600" step="1" value="5" />
     </div>
     <div class="debug" id="debug">Debug log...</div>
@@ -190,13 +187,13 @@ function updateStatus(data) {
   document.getElementById('status').textContent =
     'D1: ' + (data.d1 == 1 ? 'ON' : 'OFF') +
     ' | Latch: ' + data.latch + 's';
-  document.getElementById('latchSeconds').value = data.latch;
+  // document.getElementById('latchSeconds').value = data.latch; // No longer auto-update latch input
 
   // Set ON/OFF button colors according to D1 status
   const btnOn = document.getElementById('btnOn');
   const btnOff = document.getElementById('btnOff');
   const btnToggle = document.getElementById('btnToggle');
-  const btnRefresh = document.getElementById('btnRefresh');
+  
   if (data.d1 == 1) {
     btnOn.classList.add('green');
     btnOn.classList.remove('red');
