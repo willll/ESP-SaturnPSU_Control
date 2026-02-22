@@ -20,6 +20,8 @@ static bool testMode = false;
  * GPIO pin for relay/relay control (D1)
  */
 static const uint8_t kD1Pin = D1;
+static const uint8_t kD2Pin = D2; // D2 push button (NO)
+static bool lastD2State = false; // Track last D2 state
 
 /**
  * HTTP server on port 80
@@ -258,10 +260,28 @@ static bool isLatchActive() {
   return latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
 }
 
+void setD1On() {
+  digitalWrite(kD1Pin, HIGH);
+  latchTimerExpiry = millis() + latchPeriodMs;
+}
+
+void setD1Off() {
+  digitalWrite(kD1Pin, LOW);
+  latchTimerExpiry = millis() + latchPeriodMs;
+}
+
+void toggleD1() {
+  int current = digitalRead(kD1Pin);
+  if (current == LOW) {
+    setD1On();
+  } else {
+    setD1Off();
+  }
+}
+
 static void handleOn() {
-    Serial.print("[API] POST /api/v1/on at millis=");
-    Serial.println(millis());
-  // POST /api/v1/on: Set D1 HIGH and start latch timer
+  Serial.print("[API] POST /api/v1/on at millis=");
+  Serial.println(millis());
   // Clear latch if expired (fix race with main loop)
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
     latchTimerExpiry = 0;
@@ -274,8 +294,7 @@ static void handleOn() {
     server.send(202, "application/json", "{\"info\":\"Latch expired, wait for clear\"}");
     return;
   }
-  digitalWrite(kD1Pin, HIGH);
-  latchTimerExpiry = millis() + latchPeriodMs;
+  setD1On();
   sendJsonStatus();
 }
 
@@ -285,9 +304,8 @@ static void handleOn() {
  * @endpoint /api/v1/off (POST)
  */
 static void handleOff() {
-    Serial.print("[API] POST /api/v1/off at millis=");
-    Serial.println(millis());
-  // POST /api/v1/off: Set D1 LOW and start latch timer
+  Serial.print("[API] POST /api/v1/off at millis=");
+  Serial.println(millis());
   // Clear latch if expired (fix race with main loop)
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
     latchTimerExpiry = 0;
@@ -300,8 +318,7 @@ static void handleOff() {
     server.send(202, "application/json", "{\"info\":\"Latch expired, wait for clear\"}");
     return;
   }
-  digitalWrite(kD1Pin, LOW);
-  latchTimerExpiry = millis() + latchPeriodMs;
+  setD1Off();
   sendJsonStatus();
 }
 
@@ -316,9 +333,8 @@ static void handleOff() {
  * @endpoint /api/v1/toggle (POST)
  */
 static void handleToggle() {
-    Serial.print("[API] POST /api/v1/toggle at millis=");
-    Serial.println(millis());
-  // POST /api/v1/toggle: Toggle D1 state and update latch timer
+  Serial.print("[API] POST /api/v1/toggle at millis=");
+  Serial.println(millis());
   // Clear latch if expired (fix race with main loop)
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
     latchTimerExpiry = 0;
@@ -335,14 +351,7 @@ static void handleToggle() {
   if (LittleFS.begin() && LittleFS.exists("/test_mode")) {
     testMode = true;
   }
-  int current = digitalRead(kD1Pin);
-  if (current == LOW) {
-    digitalWrite(kD1Pin, HIGH);
-    latchTimerExpiry = millis() + latchPeriodMs;
-  } else {
-    digitalWrite(kD1Pin, LOW);
-    latchTimerExpiry = 0;
-  }
+  toggleD1();
   sendJsonStatus();
 }
 
@@ -357,6 +366,8 @@ void setup() {
 
   pinMode(kD1Pin, OUTPUT);
   digitalWrite(kD1Pin, LOW);
+  pinMode(kD2Pin, INPUT_PULLUP); // D2 as input, NO button
+  lastD2State = digitalRead(kD2Pin);
 
   WifiConfig cfg;
   if (!loadWifiConfig(cfg)) {
@@ -431,12 +442,29 @@ void setup() {
  */
 void loop() {
     static uint32_t lastLoopPrint = 0;
-    if (millis() - lastLoopPrint > 1000) {
-      Serial.print("[LOOP] millis=");
-      Serial.println(millis());
-      lastLoopPrint = millis();
-    }
+    // ...existing code...
   server.handleClient();
+
+  // D2 push button logic: toggle D1 on press, respect latch
+  bool d2State = digitalRead(kD2Pin);
+  // Button pressed: LOW (NO, pullup)
+  if (!d2State && lastD2State) { // Detect falling edge
+    Serial.print("[D2] Button pressed at millis=");
+    Serial.println(millis());
+    // Only toggle if latch is not active
+    if (!(latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0))) {
+      Serial.println("[D2] Toggling D1");
+      toggleD1();
+    } else {
+      Serial.println("[D2] Latch active, toggle ignored");
+    }
+  }
+  if (d2State != lastD2State) {
+    Serial.print("[D2] Button state changed: ");
+    Serial.println(d2State ? "RELEASED" : "PRESSED");
+  }
+  lastD2State = d2State;
+
   // Latch timer logic: after expiry, allow state changes again, but do not auto-revert relay state
   if (latchTimerExpiry > 0 && millis() > latchTimerExpiry) {
     Serial.print("loop: Latch expired at millis=");
