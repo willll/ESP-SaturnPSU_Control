@@ -11,3 +11,4 @@ results/
 hw/~ESP8266_Relay_Control.kicad_sch.lck
 hw/_autosave-ESP8266_Relay_Control.kicad_sch
 hw/#auto_saved_files#
+data/test_mode
