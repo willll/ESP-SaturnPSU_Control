@@ -25,9 +25,14 @@ This document describes the recommended test campaign for the ESP8266 D1 Control
 ## 2. Web UI Tests
 
 ### 2.1. UI Elements
-- [ ] ON, OFF, TOGGLE, and Refresh buttons are visible and enabled
-- [ ] Latch period input is present and accepts numbers
+- [ ] ON, OFF, TOGGLE buttons are visible and enabled
+- [ ] Latch period input is present, accepts numbers, and is input-only (not auto-refreshed)
 - [ ] Debug log area is visible, fixed size, and scrolls automatically
+
+### 2.4. D2 Push Button
+- [ ] Physical D2 push button toggles D1 state
+- [ ] D2 respects latch period (cannot toggle D1 while latch is active)
+- [ ] D2 input is debounced (no multiple toggles per press)
 
 ### 2.2. UI Behavior
 - [ ] Button color reflects D1 state (green for ON, orange for OFF)
