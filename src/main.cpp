@@ -12,6 +12,14 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
+
+/**
+ * @brief Default WiFi transmit power (dBm)
+ * Lower values reduce power consumption and range. Typical range: 0–20.5 dBm.
+ * Adjust as needed for your environment.
+ */
+static const uint8_t kWifiTxPowerDbm = 15;
+
 // Test mode: If true, after latch expiry, return HTTP 202 until main loop clears latch.
 // Enabled by presence of /test_mode file in LittleFS.
 static bool testMode = false;
@@ -379,6 +387,7 @@ void setup() {
     }
 
     WiFi.begin(cfg.ssid.c_str(), cfg.pass.c_str());
+    WiFi.setOutputPower(kWifiTxPowerDbm); // Set WiFi TX power (dBm)
 
     uint32_t start = millis();
     wl_status_t lastStatus = WiFi.status();
