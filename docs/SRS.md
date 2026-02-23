@@ -36,11 +36,10 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - The ON button shall be green if D1 is 1 (ON), and red otherwise.
 - The OFF button shall be red if D1 is 1 (ON), and green otherwise.
 - The TOGGLE button shall always be blue.
-- The REFRESH button shall always be yellow.
 - When the latch is active, the ON, OFF, and TOGGLE buttons shall be disabled.
 - The status refresh interval shall be every 200 milliseconds.
 - The debug log shall always be visible and update in real time.
-- The latch period input shall restrict values to the allowed range (1–3600 seconds).
+- The latch period input is for input only and shall restrict values to the allowed range (1–3600 seconds). The value is not auto-refreshed from device status.
 - The UI shall provide clear feedback for all user actions and errors.
 - The UI shall include a link to the project’s GitHub repository in the footer.
 - The UI shall not require any external resources at runtime (self-contained).
@@ -54,6 +53,7 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 
 #### 2.2 Product Functions
 - Turn D1 ON, OFF, or TOGGLE
+- Toggle D1 using D2 push button (NO, debounced, respects latch period)
 - Set latch period
 - Display current D1 and latch status
 - Show debug log in UI
@@ -81,6 +81,7 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - [FR7] The UI shall poll the backend for status updates every 200 milliseconds
 - [FR8] The system shall provide a link to the GitHub project in the UI footer
 - [FR9] The system shall support automated build, upload, and monitor via script
+- [FR10] The system shall support toggling D1 via a physical D2 push button, respecting latch period and debouncing input.
 
 #### 3.2 Non-Functional Requirements
 - [NFR1] The UI shall be responsive and mobile-friendly
