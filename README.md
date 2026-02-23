@@ -1,6 +1,14 @@
+
 # ESP8266 D1 HTTP Control
 
 This project runs on an ESP8266 NodeMCU (ESP-12E, CP2102) and exposes a web page plus a REST API to control the D1 pin (GPIO5).
+
+## Hardware Features
+- **D1 (GPIO5):** Relay control output (active HIGH)
+- **D2 (GPIO4):** Physical NO push button for manual D1 toggle (debounced, respects latch period)
+- **Optional:** 10kΩ pull-up resistor for D2 (use only if internal pull-up is insufficient)
+- **Relay:** Omron G6B-1114P-US or compatible
+- **See:** `hw/BOM_ESP8266_Relay_Control.txt` for full parts list
 
 ## Requirements
 - PlatformIO (recommended)
@@ -146,15 +154,16 @@ pio device monitor -b 74880
 If you are using VS Code tasks, run:
 - PlatformIO: Monitor
 
+
 ## Web UI Features
 
 Visit the device IP in a browser to open the control page. The web UI provides:
 
-- **ON/OFF/TOGGLE Buttons:** Instantly control the D1 pin state. Button color reflects the current state (green for ON, orange for OFF).
-- **Latch Period Input:** Set a latch period (in seconds) to automatically revert the D1 state after toggling. Enter a value and use ON/OFF/TOGGLE as usual.
-- **Status Display:** Shows the current D1 state and updates in real time.
-- **Debug Log:** A scrollable area below the controls displays timestamped debug messages, including actions, errors, and API failures. The log auto-scrolls as new messages arrive.
-- **Refresh Button:** Manually refreshes the D1 state and status from the device.
+- **ON/OFF/TOGGLE Buttons:** Instantly control the D1 pin state. Button color reflects the current state (green for ON, red for OFF). Buttons are disabled while the latch is active or if the action is not allowed.
+- **Latch Period Input:** Set the latch period (in seconds) to prevent rapid toggling. The input is for user entry only and is not auto-refreshed from device status. Allowed range: 1–3600 seconds.
+- **Status Display:** Shows the current D1 state and latch period, updates in real time (every 200ms).
+- **Debug Log:** Scrollable area below the controls displays recent debug messages, actions, and API errors. Auto-scrolls as new messages arrive.
+- **No Refresh Button:** The UI auto-updates status and disables the Refresh button (removed in latest version).
 
 ### Example UI
 
@@ -162,6 +171,13 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 *Main control panel with ON/OFF/TOGGLE, latch input, and debug log.*
 
 > **Tip:** If you see 'Status: ERROR' or debug messages about API failures, check your device connection and network.
+
+
+## Physical Push Button (D2)
+
+- **D2 (GPIO4):** Connect a normally open (NO) push button between D2 and GND.
+- **Behavior:** Pressing the button toggles D1, subject to the latch period (cannot toggle if latch is active). Input is debounced in firmware.
+- **Optional:** Add a 10kΩ pull-up resistor if needed (firmware uses INPUT_PULLUP).
 
 ## REST API
 
@@ -179,13 +195,14 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 | GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
 | POST   | /api/v1/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
 
+
 #### Details
 
-- **/api/v1/on, /api/v1/off, /api/v1/toggle**: All return the new D1 state as JSON. If latch is active, state changes may be rejected with `{ "error": "Latch active" }` and HTTP 423.
-- **/api/v1/latch**: GET returns current latch period; POST sets a new period (0 disables latch). Returns new value as JSON.
-- **/api/v1/reset**: For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
-- **/api/v1/status**: Returns current D1 state and latch timer (if active).
-- **/menu**: Returns a plain-text status summary for CLI/legacy use.
+- **/api/v1/on, /api/v1/off, /api/v1/toggle:** All return the new D1 state as JSON. If the latch is active, state changes are rejected with `{ "error": "Latch active" }` and HTTP 423.
+- **/api/v1/latch:** GET returns current latch period; POST sets a new period (range: 1–3600 seconds). Returns new value as JSON. Setting to 0 disables the latch.
+- **/api/v1/reset:** For test setup. Immediately disables latch and sets D1 LOW. Always returns `{ "reset": true }`.
+- **/api/v1/status:** Returns current D1 state and latch timer (if active).
+- **/menu:** Returns a plain-text status summary for CLI/legacy use.
 
 ##### Example: /api/v1/status
 ```json
@@ -214,9 +231,10 @@ Response:
 ```
 
 
+
 ## Automated Testing
 
-This project includes automated test suites for the REST API and device behavior:
+This project includes automated and manual test suites for firmware, REST API, web UI, and hardware features:
 
 - **Robot Framework API tests** (recommended, runs in Docker):
 	- Location: `scripts/test_api.robot`
@@ -235,12 +253,31 @@ This project includes automated test suites for the REST API and device behavior
 		python3 scripts/test_api.py 192.168.1.107
 		```
 
-Test results are shown in the terminal. The Robot Framework suite covers all REST API endpoints and basic device logic.
+- **Manual Hardware/UI Tests:**
+	- See `docs/test-campaign.md` for a full checklist, including:
+		- D2 push button toggles D1, respects latch period, and is debounced
+		- UI disables ON/OFF/TOGGLE during latch
+		- Latch input is input-only (not auto-refreshed)
+		- No Refresh button (UI auto-updates)
+		- All REST API and UI features
+
+Test results are shown in the terminal or browser. The Robot Framework suite covers all REST API endpoints and device logic.
+
 
 ## Test Campaign
 
-See `docs/test-campaign.md` for a full manual and automated test checklist covering firmware, API, web UI, deployment, and documentation.
+See `docs/test-campaign.md` for a full manual and automated test checklist covering:
+- Firmware and REST API
+- Web UI (including D2 push button and latch logic)
+- Hardware wiring and deployment
+- Documentation completeness
+
 
 ## Notes
-- D1 corresponds to GPIO5.
-- The control output is active HIGH by default.
+- D1 corresponds to GPIO5 (relay control output)
+- D2 corresponds to GPIO4 (NO push button input)
+- The control output is active HIGH by default
+- Latch period prevents rapid toggling; minimum 1s, maximum 3600s
+- D2 input is debounced and respects latch lockout
+- UI disables ON/OFF/TOGGLE during latch; latch input is not auto-refreshed
+- See SRS and test campaign for full requirements
