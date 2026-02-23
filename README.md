@@ -1,6 +1,8 @@
 
 # ESP8266 D1 HTTP Control
 
+[YouTube Demo: ESP8266 D1 Control Device](https://www.youtube.com/watch?v=zFmUQA3u5PM)
+
 This project runs on an ESP8266 NodeMCU (ESP-12E, CP2102) and exposes a web page plus a REST API to control the D1 pin (GPIO5).
 
 **Vibe coded project for learning purpose only.**
