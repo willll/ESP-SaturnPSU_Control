@@ -21,6 +21,8 @@ Item | Qty | Reference | Value/Part Number      | Description                   
   6  |  1  | PS1       | 12V DC Supply          | 12V DC Power Supply 500mA min      | Barrel Jack/Term   | Wall Adapter
   7  |  1  | USB1      | USB Cable              | USB Micro-B Cable                  | Cable              | For ESP8266 power
   8  | AR  | WIRE      | 22 AWG Wire            | Stranded hookup wire               | Various colors     | Red, Black, Orange
+  9  |  1  | SW1       | NO Push Button           | Momentary Push Button (Normally Open) | Panel/PCB Mount      | For D2 (GPIO4) user input
+ 10  |  0/1| R2        | 10kΩ (optional)          | Resistor 1/4W 5% (pull-up, if needed) | Axial                | Use if ESP8266 internal pull-up is insufficient
 
 ===================================================================================
 DETAILED SPECIFICATIONS
@@ -40,6 +42,7 @@ Dimensions: 58mm x 31mm x 13mm
 
 Pinout Used:
   - D1 (GPIO5): Relay control signal output
+  - D2 (GPIO4): NO push button input (user control)
   - GND: Ground reference
   - VIN/USB: 5V power input
 
@@ -230,6 +233,11 @@ ASSEMBLY NOTES
    - Pin 3 (COM) and Pin 4 (NO) switch your load
    - Observe load voltage/current ratings
    - Use appropriate wire gauge for load current
+
+6. D2 PUSH BUTTON WIRING
+   - Connect one side of SW1 to D2 (GPIO4), other side to GND
+   - Enable ESP8266 internal pull-up in firmware (INPUT_PULLUP)
+   - If unreliable, add external 10kΩ pull-up resistor from D2 to 3.3V
 
 ===================================================================================
 TESTING PROCEDURE
