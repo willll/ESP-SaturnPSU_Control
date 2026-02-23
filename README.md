@@ -275,7 +275,7 @@ See `docs/test-campaign.md` for a full manual and automated test checklist cover
 - Documentation completeness
 
 
-## Hardware and UI Images
+## Hardware Images
 
 ### Device Front View 1
 ![Device Front 1](docs/Front_1.jpg)
@@ -283,10 +283,6 @@ See `docs/test-campaign.md` for a full manual and automated test checklist cover
 ### Device Front View 2
 ![Device Front 2](docs/Front_2.jpg)
 
-### Web UI Screenshot
-![Web UI Screenshot](docs/screenshot1.png)
-
-*Images show the ESP8266 NodeMCU hardware, relay wiring, and web UI control panel.*
 
 ## Notes
 - D1 corresponds to GPIO5 (relay control output)
