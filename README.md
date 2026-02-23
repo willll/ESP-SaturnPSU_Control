@@ -232,8 +232,6 @@ Response:
 {"reset":true}
 ```
 
-
-
 ## Automated Testing
 
 This project includes automated and manual test suites for firmware, REST API, web UI, and hardware features:
@@ -273,6 +271,23 @@ See `docs/test-campaign.md` for a full manual and automated test checklist cover
 - Web UI (including D2 push button and latch logic)
 - Hardware wiring and deployment
 - Documentation completeness
+
+
+## Hardware and UI Images
+
+### Device Back View
+![Device Back](docs/Back.jpg)
+
+### Device Front View 1
+![Device Front 1](docs/Front_1.jpg)
+
+### Device Front View 2
+![Device Front 2](docs/Front_2.jpg)
+
+### Web UI Screenshot
+![Web UI Screenshot](docs/screenshot1.png)
+
+*Images show the ESP8266 NodeMCU hardware, relay wiring, and web UI control panel.*
 
 
 ## Notes
