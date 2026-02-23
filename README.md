@@ -3,6 +3,8 @@
 
 This project runs on an ESP8266 NodeMCU (ESP-12E, CP2102) and exposes a web page plus a REST API to control the D1 pin (GPIO5).
 
+**Vibe coded project for learning purpose only.**
+
 ## Hardware Features
 - **D1 (GPIO5):** Relay control output (active HIGH)
 - **D2 (GPIO4):** Physical NO push button for manual D1 toggle (debounced, respects latch period)
