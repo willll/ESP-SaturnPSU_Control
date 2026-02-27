@@ -185,8 +185,7 @@ function refresh() {
 
 function updateStatus(data) {
   document.getElementById('status').textContent =
-    'D1: ' + (data.d1 == 1 ? 'ON' : 'OFF') +
-    ' | Latch: ' + data.latch + 's';
+    'D1: ' + data.relay_status + ' | Latch: ' + data.latch + 's';
   // document.getElementById('latchSeconds').value = data.latch; // No longer auto-update latch input
 
   // Set ON/OFF button colors according to D1 status
@@ -194,7 +193,7 @@ function updateStatus(data) {
   const btnOff = document.getElementById('btnOff');
   const btnToggle = document.getElementById('btnToggle');
   
-  if (data.d1 == 1) {
+  if (data.relay_status === 'ON') {
     btnOn.classList.add('green');
     btnOn.classList.remove('red');
     btnOff.classList.add('red');
@@ -207,10 +206,10 @@ function updateStatus(data) {
   }
   // Disable ON/OFF/TOGGLE when latch is active (latchActive = timer running)
   const latchActive = data.latch_timer_active === true;
-  // ON button disabled if D1 is ON or latch is active
-  btnOn.disabled = (data.d1 == 1) || latchActive;
-  // OFF button disabled if D1 is OFF or latch is active
-  btnOff.disabled = (data.d1 == 0) || latchActive;
+  // ON button disabled if relay is ON or latch is active
+  btnOn.disabled = (data.relay_status === 'ON') || latchActive;
+  // OFF button disabled if relay is OFF or latch is active
+  btnOff.disabled = (data.relay_status === 'OFF') || latchActive;
   btnToggle.disabled = latchActive;
 }
 

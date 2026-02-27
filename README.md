@@ -190,10 +190,10 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 | Method | Path           | Description                                                      | Example Response           |
 |--------|----------------|------------------------------------------------------------------|----------------------------|
 | GET    | /              | Web UI (HTML page)                                               | (HTML)                     |
-| GET    | /api/v1/status    | Get current D1 state and latch info                              | `{ "d1": 1, "latch": 0 }` |
-| POST   | /api/v1/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "d1": 1 }`              |
-| POST   | /api/v1/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "d1": 0 }`              |
-| POST   | /api/v1/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "d1": 0 }` or `{ "d1": 1 }` |
+| GET    | /api/v1/status    | Get current relay status and latch info                          | `{ "relay_status": "ON", "latch": 0 }` |
+| POST   | /api/v1/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "relay_status": "ON" }`              |
+| POST   | /api/v1/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "relay_status": "OFF" }`              |
+| POST   | /api/v1/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "relay_status": "ON" }` or `{ "relay_status": "OFF" }` |
 | GET    | /api/v1/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
 | POST   | /api/v1/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
 | GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
@@ -210,7 +210,7 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 
 ##### Example: /api/v1/status
 ```json
-{"d1":1, "latch":0}
+{"relay_status":"ON", "latch":0}
 ```
 
 ##### Example: /api/v1/latch (POST)

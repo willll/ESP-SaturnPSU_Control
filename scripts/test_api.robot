@@ -42,14 +42,14 @@ Power On And WiFi
     [Tags]    firmware
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
     Should Be Equal As Integers    ${resp.status_code}    200
-    Dictionary Should Contain Key    ${resp.json()}    d1
+    Dictionary Should Contain Key    ${resp.json()}    relay_status
 
 POST On Sets D1 High
     [Tags]    api
     POST On Session    ${SESSION}    /api/v1/on
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    1
+    Should Be Equal    ${resp.json()['relay_status']}    ON
 
 POST Off Sets D1 Low
     [Tags]    api
@@ -68,7 +68,7 @@ POST Off Sets D1 Low
     POST On Session    ${SESSION}    /api/v1/off
     Sleep    0.5s
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    0
+    Should Be Equal    ${resp.json()['relay_status']}    OFF
 
 POST Toggle Flips D1
     [Tags]    api
@@ -76,7 +76,7 @@ POST Toggle Flips D1
     POST On Session    ${SESSION}    /api/v1/reset
     Sleep    0.5s
     ${before}=  GET On Session    ${SESSION}    /api/v1/status
-    ${prev}=    Set Variable    ${before.json()['d1']}
+    ${prev}=    Set Variable    ${before.json()['relay_status']}
     # Wait for latch to be released
     FOR    ${i}    IN RANGE    20
         ${latch}=    Set Variable    ${before.json()['latch']}
@@ -88,7 +88,7 @@ POST Toggle Flips D1
     POST On Session    ${SESSION}    /api/v1/toggle
     Sleep    0.5s
     ${after}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Not Be Equal    ${after.json()['d1']}    ${prev}
+    Should Not Be Equal    ${after.json()['relay_status']}    ${prev}
 
 Menu Endpoint Returns Status
     [Tags]    api
@@ -127,7 +127,7 @@ Latch Lockout Prevents Frequent Changes
     ${resp}=  POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    0
+    Should Be Equal    ${resp.json()['relay_status']}    OFF
 
 Latch Disabled (0) Allows Immediate Changes
     [Tags]    latch
@@ -151,7 +151,7 @@ Latch Disabled (0) Allows Immediate Changes
     POST On Session    ${SESSION}    /api/v1/off
     Should Be Equal As Integers    ${resp.status_code}    200
     ${resp}=  GET On Session    ${SESSION}    /api/v1/status
-    Should Be Equal As Integers    ${resp.json()['d1']}    0
+    Should Be Equal    ${resp.json()['relay_status']}    OFF
 
 Latch Rejects State Change During Active Period
     [Tags]    latch    enforcement

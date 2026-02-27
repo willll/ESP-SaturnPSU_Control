@@ -197,14 +197,14 @@ static void handleMenu() {
  * @endpoint /api/v1/status (GET)
  */
 static void sendJsonStatus() {
-  // Compose status JSON with D1 state, latch period, and timer info
-  const char *state = digitalRead(kD1Pin) ? "1" : "0";
+  // Compose status JSON with relay status as 'ON' or 'OFF', latch period, and timer info
+  const char *relayStatus = digitalRead(kD1Pin) ? "ON" : "OFF";
   bool latchActive = latchTimerExpiry > 0 && ((int32_t)(latchTimerExpiry - millis()) > 0);
-  String payload = String("{\"d1\":") + state +
-    ",\"latch\":" + latchPeriodMs/1000 +
-    ",\"latch_timer_active\":" + (latchActive ? "true" : "false") +
-    ",\"latch_timer_expiry\":" + latchTimerExpiry +
-    ",\"millis\":" + millis() + "}";
+  String payload = String("{\"relay_status\":\"") + relayStatus + "\""
+    + ",\"latch\":" + latchPeriodMs/1000
+    + ",\"latch_timer_active\":" + (latchActive ? "true" : "false")
+    + ",\"latch_timer_expiry\":" + latchTimerExpiry
+    + ",\"millis\":" + millis() + "}";
   server.send(200, "application/json", payload);
 }
 
@@ -254,6 +254,20 @@ static void handleIndex() {
   server.streamFile(file, "text/html");
   file.close();
 }
+  // Serve openapi.yaml from LittleFS at /openapi.yaml
+  /**
+   * @brief Serve openapi.yaml from LittleFS
+   * @endpoint /openapi.yaml (GET)
+   */
+  static void handleOpenApiSpec() {
+    File file = LittleFS.open("/openapi.yaml", "r");
+    if (!file) {
+      server.send(404, "text/plain", "openapi.yaml not found");
+      return;
+    }
+    server.streamFile(file, "text/plain");
+    file.close();
+  }
 
 
 
@@ -432,6 +446,8 @@ void setup() {
   server.on("/menu", HTTP_GET, handleMenu);
   server.on("/api/v1/latch", HTTP_GET, handleLatch);
   server.on("/api/v1/latch", HTTP_POST, handleLatch);
+    // Serve OpenAPI spec at /openapi.yaml
+    server.on("/openapi.yaml", HTTP_GET, handleOpenApiSpec);
 
   // Expose /api/v1/reset endpoint for test setup (clears latch and sets D1 LOW)
   server.on("/api/v1/reset", HTTP_POST, []() {
@@ -450,7 +466,7 @@ void setup() {
  * @brief Arduino main loop: handle HTTP requests and latch timer
  */
 void loop() {
-    static uint32_t lastLoopPrint = 0;
+    // Removed unused variable lastLoopPrint
     // ...existing code...
   server.handleClient();
 

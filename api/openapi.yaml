@@ -81,7 +81,7 @@ paths:
                     example: Latch active
   /api/v1/status:
     get:
-      summary: Get current D1 state and latch info
+      summary: Get current relay status and latch info
       responses:
         '200':
           description: Status info
@@ -90,9 +90,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  d1:
-                    type: integer
-                    example: 1
+                  relay_status:
+                    type: string
+                    enum:
+                      - ON
+                      - OFF
+                    example: ON
                   latch:
                     type: integer
                     example: 0

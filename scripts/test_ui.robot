@@ -5,6 +5,12 @@ Suite Setup       Open Browser To D1 UI
 Test Setup        Reset Device State
 Suite Teardown    Close Browser
 *** Keywords ***
+Set Relay State
+    [Arguments]    ${status}
+    Wait For Latch Expiry
+    ${endpoint}=    Set Variable    ${status == 'ON' and 'on' or 'off'}
+    ${resp}=    POST On Session    d1    api/v1/${endpoint}
+    Should Be Equal As Integers    ${resp.status_code}    200
 Wait For Latch Expiry
     # Poll /api/v1/status until latch_timer_active is false
     FOR    ${i}    IN RANGE    50
@@ -32,7 +38,7 @@ ${CHROME CAPABILITIES}    {"browserName": "chrome", "goog:chromeOptions": {"args
 *** Test Cases ***
 ON Button Green When D1 Is 1
     [Tags]    color    status
-    Set D1 State    1
+    Set Relay State    ON
     Reload Page
     Element Attribute Value Should Be    id=btnOn    class    btn-on green
     Element Attribute Value Should Be    id=btnOff   class    btn-off red
@@ -41,7 +47,7 @@ ON Button Green When D1 Is 1
 
 OFF Button Green When D1 Is 0
     [Tags]    color    status
-    Set D1 State    0
+    Set Relay State    OFF
     Reload Page
     Element Attribute Value Should Be    id=btnOn    class    btn-on red
     Element Attribute Value Should Be    id=btnOff   class    btn-off green
@@ -68,11 +74,11 @@ GitHub Link In Footer
 Polls Status Every 2 Seconds
     [Tags]    polling    ui
     # Set D1 state to 1 (ON)
-    Set D1 State    1
+    Set Relay State    ON
     Reload Page
     Sleep    2.5s
     # Change D1 state to 0 (OFF) via API
-    Set D1 State    0
+    Set Relay State    OFF
     # Wait for polling interval
     Sleep    2.5s
     # Verify UI reflects new D1 state
@@ -82,7 +88,7 @@ Polls Status Every 2 Seconds
 API Error Handling And Feedback
     [Tags]    error    ui
     # Try to set D1 state during latch (should fail)
-    Set D1 State    1
+    Set Relay State    ON
     Input Text    id=latchSeconds    2
     Press Key    id=latchSeconds    RETURN
     Sleep    0.5s
@@ -137,11 +143,13 @@ Open Browser To D1 UI
 
 
 Set D1 State
-    [Arguments]    ${state}
-    Wait For Latch Expiry
-    # Use API to set D1 state directly
-    ${resp}=    POST On Session    d1    api/v1/${state == '1' and 'on' or 'off'}
-    Should Be Equal As Integers    ${resp.status_code}    200
+    Set Relay State
+        [Arguments]    ${status}
+        Wait For Latch Expiry
+        # Use API to set relay state directly
+        ${endpoint}=    Set Variable    ${status == 'ON' and 'on' or 'off'}
+        ${resp}=    POST On Session    relay_status    api/v1/${endpoint}
+        Should Be Equal    ${resp.status_code}    200
 
 Reload Page
     Reload Page
