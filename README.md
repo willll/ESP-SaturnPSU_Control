@@ -246,17 +246,164 @@ Visit the device IP in a browser to open the control page. The web UI provides:
 
 ### REST API Endpoints
 
-| Method | Path           | Description                                                      | Example Response           |
-|--------|----------------|------------------------------------------------------------------|----------------------------|
-| GET    | /              | Web UI (HTML page)                                               | (HTML)                     |
-| GET    | /api/v1/status    | Get current relay status and latch info                          | `{ "relay_status": "ON", "latch": 0 }` |
-| POST   | /api/v1/on        | Set D1 HIGH (ON), starts latch timer if set                      | `{ "relay_status": "ON" }`              |
-| POST   | /api/v1/off       | Set D1 LOW (OFF), starts latch timer if set                      | `{ "relay_status": "OFF" }`              |
-| POST   | /api/v1/toggle    | Toggle D1 state, starts latch timer if set                       | `{ "relay_status": "ON" }` or `{ "relay_status": "OFF" }` |
-| GET    | /api/v1/latch     | Get current latch period (seconds)                               | `{ "latch": 5 }`           |
-| POST   | /api/v1/latch     | Set latch period (seconds, 0 disables latch; see SRS for min/max) | `{ "latch": 10 }`          |
-| GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | (text)                     |
-| POST   | /api/v1/reset     | Clear latch, set D1 LOW (test setup/reset)                       | `{ "reset": true }`         |
+| Method | Path           | Description                                                      | Status | Response           |
+|--------|----------------|------------------------------------------------------------------|---------|--------------------|
+| GET    | /              | Web UI (HTML page)                                               | 200   | (HTML)                     |
+| GET    | /api/v1/status | Get current relay status and latch info                          | 200   | See example below |
+| POST   | /api/v1/on     | Set D1 HIGH (ON), starts latch timer if set                      | 200/423 | `{ "relay_status": "ON", ... }`              |
+| POST   | /api/v1/off    | Set D1 LOW (OFF), starts latch timer if set                      | 200/423 | `{ "relay_status": "OFF", ... }`              |
+| POST   | /api/v1/toggle | Toggle D1 state, starts latch timer if set                       | 200/423 | `{ "relay_status": "ON\|OFF", ... }` |
+| GET    | /api/v1/latch  | Get current latch period (seconds)                               | 200   | `{ "latch": 5 }`           |
+| POST   | /api/v1/latch  | Set latch period (1-3600 seconds, constraints enforced)          | 200/400 | `{ "latch": 10 }`          |
+| GET    | /menu          | Plain-text status menu (for legacy/CLI use)                      | 200   | (text)                     |
+| POST   | /api/v1/reset  | Clear latch, set D1 LOW (test setup/reset)                       | 200   | `{ "reset": true }`         |
+| GET    | /openapi.yaml  | OpenAPI 3.0 specification of this API                            | 200   | (YAML)                     |
+
+### Status Endpoint Response Format
+
+```json
+{
+  "relay_status": "ON",
+  "latch": 5,
+  "latch_timer_active": false,
+  "latch_timer_expiry": 0,
+  "millis": 1234567
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `relay_status` | string | Current relay state: `"ON"` or `"OFF"` |
+| `latch` | number | Latch period in seconds (1–3600, or clamped) |
+| `latch_timer_active` | boolean | True if latch is currently active and preventing changes |
+| `latch_timer_expiry` | number | Milliseconds when latch expires (0 if not active) |
+| `millis` | number | Device uptime in milliseconds (for sync reference) |
+
+### HTTP Status Codes
+
+| Code | Meaning | Example |
+|------|---------|---------|
+| **200** | Success | Any control or status request succeeded |
+| **400** | Bad Request | Invalid JSON in POST body or missing required fields |
+| **423** | Locked | Latch is active; state change blocked until latch expires |
+| **404** | Not Found | Endpoint doesn't exist |
+| **500** | Server Error | Firmware error (rare) |
+
+### Usage Examples
+
+#### Get Current Status
+```bash
+curl http://saturnpsu.local/api/v1/status
+```
+
+**Response:**
+```json
+{
+  "relay_status": "OFF",
+  "latch": 5,
+  "latch_timer_active": false,
+  "latch_timer_expiry": 0,
+  "millis": 42325
+}
+```
+
+#### Turn Relay ON
+```bash
+curl -X POST http://saturnpsu.local/api/v1/on
+```
+
+**Response (200):**
+```json
+{
+  "relay_status": "ON",
+  "latch": 5,
+  "latch_timer_active": true,
+  "latch_timer_expiry": 47325,
+  "millis": 42325
+}
+```
+
+**Response if latch active (423):**
+```json
+{
+  "error": "Latch active"
+}
+```
+
+#### Set Latch Period
+```bash
+curl -X POST http://saturnpsu.local/api/v1/latch \
+  -H "Content-Type: application/json" \
+  -d '{"latch": 10}'
+```
+
+**Response (200):**
+```json
+{
+  "latch": 10
+}
+```
+
+**Invalid constraints (auto-clamped to 1-3600):**
+```bash
+# Request: latch = 0 (below minimum)
+curl -X POST http://saturnpsu.local/api/v1/latch \
+  -H "Content-Type: application/json" \
+  -d '{"latch": 0}'
+# Response: {"latch": 1}  (clamped to min)
+
+# Request: latch = 9999 (above maximum)
+curl -X POST http://saturnpsu.local/api/v1/latch \
+  -H "Content-Type: application/json" \
+  -d '{"latch": 9999}'
+# Response: {"latch": 3600}  (clamped to max)
+```
+
+#### Toggle Relay
+```bash
+curl -X POST http://saturnpsu.local/api/v1/toggle
+```
+
+#### Get Latch Period
+```bash
+curl http://saturnpsu.local/api/v1/latch
+```
+
+**Response:**
+```json
+{
+  "latch": 5
+}
+```
+
+#### Reset (Clear latch, set D1 LOW)
+```bash
+curl -X POST http://saturnpsu.local/api/v1/reset
+```
+
+**Response:**
+```json
+{
+  "reset": true
+}
+```
+
+### API Behavior Notes
+
+- **Latch Constraints:** Latch period is automatically clamped to 1–3600 seconds. Values of 0 or below are set to 1; values above 3600 are set to 3600.
+- **Latch Behavior:** When a control endpoint (on/off/toggle) executes successfully, a latch timer starts. Any subsequent control requests return **423 Locked** until the timer expires.
+- **No Auto-Revert:** After the latch expires, the relay **remains in its set state** (does not auto-revert).
+- **Idempotent:** All endpoints are safe to call repeatedly; duplicate requests are harmless.
+- **mDNS Support:** Endpoints are accessible via `http://<hostname>.local/api/v1/...` on any client on the same network.
+
+### OpenAPI Specification
+
+Full OpenAPI 3.0 specification available at:
+```
+GET /openapi.yaml
+```
+
+Serve in [SwaggerUI](https://swagger.io/tools/swagger-ui/) or [ReDoc](https://redoc.ly/) for interactive exploration.
 
 
 #### Details

@@ -3,88 +3,38 @@ info:
   title: ESP8266 D1 HTTP Control API
   version: 1.0.0
   description: |
-    REST API for controlling the D1 (GPIO5) pin on an ESP8266 NodeMCU. Includes endpoints for ON/OFF/TOGGLE, latch timer, status, and test/reset.
+    REST API for controlling the D1 (GPIO5) relay pin on an ESP8266 NodeMCU.
+    Supports ON/OFF/TOGGLE control, latch timer, status queries, and device reset.
+    
+    **Access Methods:**
+    - mDNS (preferred): `http://saturnpsu.local/api/v1/...`
+    - By IP: `http://192.168.1.106/api/v1/...`
+    
+    **Latch Behavior:**
+    After a successful control operation, a "latch" period begins during which further
+    state changes are blocked (HTTP 423). Latch period is clamped to [1, 3600] seconds.
+    After latch expires, the relay remains in its set state (no auto-revert).
+
 servers:
-  - url: http://<device-ip>
+  - url: http://{hostname}.local
+    description: mDNS access (auto-discovery, preferred)
+    variables:
+      hostname:
+        default: saturnpsu
+  - url: http://{ip}
+    description: Static IP access
+    variables:
+      ip:
+        default: '192.168.1.106'
+
 paths:
-  /api/v1/on:
-    post:
-      summary: Set D1 HIGH (ON)
-      responses:
-        '200':
-          description: D1 set HIGH
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  d1:
-                    type: integer
-                    example: 1
-        '423':
-          description: Latch active, cannot change state
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Latch active
-  /api/v1/off:
-    post:
-      summary: Set D1 LOW (OFF)
-      responses:
-        '200':
-          description: D1 set LOW
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  d1:
-                    type: integer
-                    example: 0
-        '423':
-          description: Latch active, cannot change state
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Latch active
-  /api/v1/toggle:
-    post:
-      summary: Toggle D1 state
-      responses:
-        '200':
-          description: D1 toggled
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  d1:
-                    type: integer
-                    example: 1
-        '423':
-          description: Latch active, cannot change state
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Latch active
   /api/v1/status:
     get:
       summary: Get current relay status and latch info
+      tags: [Status]
       responses:
         '200':
-          description: Status info
+          description: Current device status
           content:
             application/json:
               schema:
@@ -92,19 +42,125 @@ paths:
                 properties:
                   relay_status:
                     type: string
-                    enum:
-                      - ON
-                      - OFF
-                    example: ON
+                    enum: [ON, OFF]
                   latch:
                     type: integer
-                    example: 0
+                    minimum: 1
+                    maximum: 3600
+                  latch_timer_active:
+                    type: boolean
+                  latch_timer_expiry:
+                    type: integer
+                  millis:
+                    type: integer
+              example:
+                relay_status: 'ON'
+                latch: 5
+                latch_timer_active: false
+                latch_timer_expiry: 0
+                millis: 125432
+
+  /api/v1/on:
+    post:
+      summary: Set D1 HIGH (turn relay ON)
+      tags: [Control]
+      responses:
+        '200':
+          description: Relay ON, latch timer started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relay_status:
+                    type: string
+                    enum: [ON, OFF]
+                  latch:
+                    type: integer
+                  latch_timer_active:
+                    type: boolean
+                  latch_timer_expiry:
+                    type: integer
+                  millis:
+                    type: integer
+        '423':
+          description: Latch active (state change blocked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example: {error: 'Latch active'}
+
+  /api/v1/off:
+    post:
+      summary: Set D1 LOW (turn relay OFF)
+      tags: [Control]
+      responses:
+        '200':
+          description: Relay OFF, latch timer started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relay_status:
+                    type: string
+                  latch:
+                    type: integer
+                  latch_timer_active:
+                    type: boolean
+                  latch_timer_expiry:
+                    type: integer
+                  millis:
+                    type: integer
+        '423':
+          description: Latch active (state change blocked)
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {error: 'Latch active'}
+
+  /api/v1/toggle:
+    post:
+      summary: Toggle D1 state (ON→OFF or OFF→ON)
+      tags: [Control]
+      responses:
+        '200':
+          description: Relay toggled, new state returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relay_status:
+                    type: string
+                  latch:
+                    type: integer
+                  latch_timer_active:
+                    type: boolean
+                  latch_timer_expiry:
+                    type: integer
+                  millis:
+                    type: integer
+        '423':
+          description: Latch active (state change blocked)
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {error: 'Latch active'}
+
   /api/v1/latch:
     get:
       summary: Get current latch period (seconds)
+      tags: [Latch]
       responses:
         '200':
-          description: Latch period
+          description: Current latch period
           content:
             application/json:
               schema:
@@ -112,9 +168,17 @@ paths:
                 properties:
                   latch:
                     type: integer
-                    example: 5
+                    minimum: 1
+                    maximum: 3600
+              example: {latch: 5}
+
     post:
-      summary: Set latch period (seconds, 0 disables latch)
+      summary: Set latch period (seconds)
+      tags: [Latch]
+      description: |
+        Set latch period. Values are auto-clamped to [1, 3600]:
+        - Input ≤ 0 → clamped to 1 (minimum)
+        - Input > 3600 → clamped to 3600 (maximum)
       requestBody:
         required: true
         content:
@@ -124,10 +188,12 @@ paths:
               properties:
                 latch:
                   type: integer
-                  example: 10
+                  description: Desired latch period (seconds)
+              required: [latch]
+            example: {latch: 10}
       responses:
         '200':
-          description: Latch period set
+          description: Latch period set (may be clamped)
           content:
             application/json:
               schema:
@@ -135,10 +201,17 @@ paths:
                 properties:
                   latch:
                     type: integer
-                    example: 10
+                    minimum: 1
+                    maximum: 3600
+              example: {latch: 10}
+        '400':
+          description: Bad request (invalid JSON)
+
   /api/v1/reset:
     post:
-      summary: Clear latch and set D1 LOW (test setup/reset)
+      summary: Reset (clear latch, set D1 LOW)
+      tags: [Control]
+      description: Clear active latch timer and set relay to OFF (test setup/emergency reset)
       responses:
         '200':
           description: Reset performed
@@ -149,24 +222,53 @@ paths:
                 properties:
                   reset:
                     type: boolean
-                    example: true
+              example: {reset: true}
+
   /menu:
     get:
-      summary: Plain-text status menu (for CLI/legacy use)
+      summary: Plain-text status menu
+      tags: [Status]
       responses:
         '200':
-          description: Plain-text status
+          description: Human-readable status text
           content:
             text/plain:
               schema:
                 type: string
-  /:
+
+  /openapi.yaml:
     get:
-      summary: Web UI (HTML page)
+      summary: OpenAPI 3.0 specification
+      tags: [Metadata]
+      description: Returns this API specification (YAML). Use with SwaggerUI or ReDoc for interactive docs.
       responses:
         '200':
-          description: Web UI HTML
+          description: OpenAPI specification
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /:
+    get:
+      summary: Web UI (HTML)
+      tags: [UI]
+      responses:
+        '200':
+          description: Interactive web control panel
           content:
             text/html:
               schema:
                 type: string
+
+tags:
+  - name: Control
+    description: Relay control endpoints
+  - name: Status
+    description: Status query endpoints
+  - name: Latch
+    description: Latch configuration endpoints
+  - name: UI
+    description: User interface endpoints
+  - name: Metadata
+    description: API metadata and documentation

@@ -1,8 +1,15 @@
 #!/bin/sh
-# Entrypoint: run API and UI tests using Selenium remote Chrome in Docker
+# Entrypoint: run API and UI tests using Robot Framework and Selenium
 
 set -e
 
+# Environment variables (set defaults if not provided):
+#   DEVICE_IP:         Device IPv4 address (default: 192.168.1.107)
+#   DEVICE_HOSTNAME:   Device mDNS hostname without .local suffix (default: saturnpsu)
+#   SELENIUM_REMOTE_URL: Selenium Grid hub URL (default: http://localhost:4444/wd/hub)
+# 
+# Example usage:
+#   DEVICE_IP=192.168.1.106 DEVICE_HOSTNAME=saturnpsu ./scripts/run_all_tests.sh
 
 OUTDIR=results
 # Empty the results directory before running tests
@@ -15,6 +22,7 @@ if ! docker image inspect esp-saturnpsu-test >/dev/null 2>&1; then
 fi
 
 : "${DEVICE_IP:=192.168.1.107}"
+: "${DEVICE_HOSTNAME:=saturnpsu}"
 SELENIUM_REMOTE_URL=${SELENIUM_REMOTE_URL:-http://localhost:4444/wd/hub}
 
 
@@ -27,7 +35,8 @@ fi
 echo
 echo "========================================="
 echo "Waiting for device HTTP server at:"
-echo "  http://$DEVICE_IP/api/v1/status"
+echo "  IP:       http://$DEVICE_IP/api/v1/status"
+echo "  Hostname: http://$DEVICE_HOSTNAME.local/api/v1/status"
 echo "========================================="
 success=0
 for i in $(seq 1 30); do
@@ -50,6 +59,7 @@ fi
 docker run --rm \
   --network host \
   -e DEVICE_IP="$DEVICE_IP" \
+  -e DEVICE_HOSTNAME="$DEVICE_HOSTNAME" \
   -e SELENIUM_REMOTE_URL="$SELENIUM_REMOTE_URL" \
   -v "$PWD/scripts":/tests/scripts \
   -v "$PWD/results":/tests/results \
