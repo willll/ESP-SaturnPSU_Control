@@ -43,7 +43,11 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - The UI shall provide clear feedback for all user actions and errors.
 - The UI shall include a link to the project’s GitHub repository in the footer.
 - The UI shall not require any external resources at runtime (self-contained).
-
+### 1.6 Network Requirements
+- The system shall support mDNS (multicast DNS) to register the device on the local network.
+- The device shall register with the hostname specified in `wifi.json`.
+- The device shall be accessible via `<hostname>.local` from any client on the same WiFi network.
+- If hostname is not set or is empty, the mDNS responder shall be disabled.
 ### 2. Overall Description
 #### 2.1 Product Perspective
 - Runs on ESP8266 NodeMCU hardware
@@ -88,6 +92,8 @@ This document specifies the requirements for the ESP-SaturnPSU_Control project, 
 - [NFR2] The system shall handle API errors gracefully and inform the user
 - [NFR3] The firmware and UI shall be self-contained and require no external dependencies at runtime
 - [NFR4] The system shall be open source and documented
+- [NFR5] The system shall support mDNS for network discovery via `<hostname>.local`
+- [NFR6] The device shall be accessible without knowing its IPv4 address when on the same network
 
 ### 4. External Interface Requirements
 #### 4.1 Hardware Interfaces

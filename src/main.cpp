@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
@@ -422,6 +423,17 @@ void setup() {
       Serial.println(WiFi.localIP());
       Serial.print("IPv4 Address: ");
       Serial.println(WiFi.localIP());
+      
+      // Initialize mDNS responder
+      if (MDNS.begin(cfg.hostname.c_str())) {
+        Serial.print("mDNS responder started: ");
+        Serial.print(cfg.hostname);
+        Serial.println(".local");
+        MDNS.addService("http", "tcp", 80);
+      } else {
+        Serial.println("mDNS responder failed to start");
+      }
+      
       lastWifiError = "";
     } else {
       wl_status_t finalStatus = WiFi.status();
@@ -469,6 +481,7 @@ void loop() {
     // Removed unused variable lastLoopPrint
     // ...existing code...
   server.handleClient();
+  MDNS.update();
 
   // D2 push button logic: toggle D1 on press, respect latch
   bool d2State = digitalRead(kD2Pin);

@@ -7,15 +7,20 @@ This document describes the recommended test campaign for the ESP8266 D1 Control
 ### 1.1. Power-on and WiFi
 - [ ] Device boots and connects to WiFi (check serial monitor for IP and status)
 - [ ] Handles missing or invalid wifi.json gracefully (error message on serial)
+- [ ] mDNS responder starts successfully after WiFi connection
+- [ ] Device registers with hostname from wifi.json (e.g., `saturnpsu.local`)
+- [ ] Can ping device at `<hostname>.local` from another device on same network
+- [ ] Serial output shows: `mDNS responder started: <hostname>.local`
 
 ### 1.2. REST API Endpoints
-- [ ] `POST /api/v1/on` sets D1 pin HIGH, returns success
-- [ ] `POST /api/v1/off` sets D1 pin LOW, returns success
-- [ ] `POST /api/v1/toggle` toggles D1 pin, returns new state
-- [ ] `GET /api/v1/status` returns current D1 state as JSON
+- [ ] `POST /api/v1/on` sets D1 pin HIGH, returns success (both IP and hostname)
+- [ ] `POST /api/v1/off` sets D1 pin LOW, returns success (both IP and hostname)
+- [ ] `POST /api/v1/toggle` toggles D1 pin, returns new state (both IP and hostname)
+- [ ] `GET /api/v1/status` returns current D1 state as JSON (both IP and hostname)
 - [ ] `GET /menu` returns plain-text status
 - [ ] All endpoints handle errors (invalid method, malformed request)
 - [ ] `POST /api/v1/reset` clears latch and sets D1 LOW for test setup
+- [ ] Endpoints are accessible via `http://<hostname>.local` without IP address
 
 ### 1.3. Latch Logic
 - [ ] Setting ON or OFF with a latch period reverts state after the correct time
@@ -45,9 +50,11 @@ This document describes the recommended test campaign for the ESP8266 D1 Control
 - [ ] UI works in Chrome, Firefox, and Edge (basic test)
 - [ ] Mobile browser layout is usable
 
-## 3. Filesystem & Deployment
-- [ ] All files in data/ are uploaded to LittleFS (index.html, main.js, style.css, wifi.json)
+## 3. Network & Filesystem Deployment
+- [ ] All files in data/ are uploaded to LittleFS (index.html, wifi.json)
 - [ ] Device serves latest UI after uploadfs
+- [ ] Device is accessible via hostname after uploadfs and reboot
+- [ ] Changing hostname in wifi.json and re-uploading changes mDNS registration
 
 ## 4. Documentation
 - [ ] README is up to date and clear

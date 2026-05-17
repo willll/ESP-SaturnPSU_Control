@@ -144,6 +144,65 @@ Upload the filesystem before flashing the firmware:
 pio run -t uploadfs
 ```
 
+## mDNS (Multicast DNS) Support
+
+The device automatically registers on your local network using mDNS, making it accessible via a friendly hostname instead of IP address.
+
+### How to Access
+
+**Web UI:**
+```
+http://<hostname>.local
+```
+
+**REST API:**
+```
+http://<hostname>.local/api/v1/status
+```
+
+**Example:** If your wifi.json has `"hostname": "saturnpsu"`, access it at:
+```
+http://saturnpsu.local
+```
+
+### Test mDNS Connectivity
+
+From any device on the same network, ping the device to verify mDNS registration:
+
+```bash
+ping saturnpsu.local
+```
+
+**Expected output:**
+```
+64 bytes from 192.168.1.106: seq=0 ttl=255 time=2.230 ms
+```
+
+### mDNS Requirements
+
+- Device and client must be on the **same WiFi network**
+- Client device needs **mDNS support** (built-in on macOS, Linux, Windows 10+)
+- Hostname must be set in `wifi.json` (see WiFi configuration section above)
+- If hostname is empty, mDNS responder is disabled
+
+### Hostname Configuration
+
+Edit `data/wifi.json`:
+
+```json
+{
+  "hostname": "saturnpsu"
+}
+```
+
+After changing the hostname, re-upload the filesystem:
+
+```bash
+pio run -t uploadfs
+```
+
+Reboot the device or power cycle to apply.
+
 ## Build and upload
 
 ```bash

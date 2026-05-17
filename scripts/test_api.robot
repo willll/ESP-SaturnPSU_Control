@@ -256,3 +256,31 @@ Latch Timer Reset On Expiry
     END
     ${resp}=  POST On Session    ${SESSION}    /api/v1/on
     Should Be Equal As Integers    ${resp.status_code}    200
+
+# mDNS Tests
+Device Accessible Via Hostname
+    [Tags]    mdns    network
+    [Documentation]    Test that device is accessible via mDNS hostname (.local)
+    ${HOSTNAME}=    Get Environment Variable    DEVICE_HOSTNAME    None
+    Skip If    '${HOSTNAME}' == 'None'    DEVICE_HOSTNAME not set, skipping mDNS test
+    ${hostname_url}=    Set Variable    http://${HOSTNAME}.local
+    Log    Testing mDNS access at ${hostname_url}
+    ${session_mdns}=    Create Session    mdns_session    ${hostname_url}
+    ${resp}=  GET On Session    mdns_session    /api/v1/status
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Dictionary Should Contain Key    ${resp.json()}    relay_status
+    Log    mDNS hostname resolution successful: ${HOSTNAME}.local
+
+mDNS Status Endpoint Returns Same Data As IP
+    [Tags]    mdns    network
+    [Documentation]    Verify that API responses are identical via IP and hostname
+    ${HOSTNAME}=    Get Environment Variable    DEVICE_HOSTNAME    None
+    Skip If    '${HOSTNAME}' == 'None'    DEVICE_HOSTNAME not set, skipping mDNS test
+    ${resp_ip}=  GET On Session    ${SESSION}    /api/v1/status
+    ${hostname_url}=    Set Variable    http://${HOSTNAME}.local
+    ${session_mdns}=    Create Session    mdns_session_2    ${hostname_url}
+    ${resp_hostname}=  GET On Session    mdns_session_2    /api/v1/status
+    Should Be Equal As Integers    ${resp_ip.status_code}    200
+    Should Be Equal As Integers    ${resp_hostname.status_code}    200
+    Should Be Equal    ${resp_ip.json()['relay_status']}    ${resp_hostname.json()['relay_status']}
+    Log    mDNS and IP endpoints return identical status
